@@ -15,6 +15,7 @@ import AddBloodPressureRecord from '@/views/mobile/MedicalRecords/AddBloodPressu
 import AddBloodSugarRecord from '@/views/mobile/MedicalRecords/AddBloodSugarRecord.vue'
 import AddBodyWeightRecord from '@/views/mobile/MedicalRecords/AddBodyWeightRecord.vue'
 import AddFamilyMember from '@/views/mobile/MedicalRecords/AddFamilyMember.vue'
+import RecordDetail from '@/views/mobile/MedicalRecords/RecordDetail.vue'
 import CarMaintenance from '@/views/LandingPage/CarMaintenance.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
 
@@ -52,6 +53,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/add-record',
     name: 'add-record',
     component: AddRecord,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/records/:id',
+    name: 'medical-record-detail',
+    component: RecordDetail,
     meta: { requiresAuth: true }
   },
   {

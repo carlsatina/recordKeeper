@@ -93,6 +93,17 @@
                 />
             </div>
 
+            <!-- Provider Name -->
+            <div class="form-group">
+                <label class="form-label">Provider / Facility</label>
+                <input 
+                    type="text" 
+                    v-model="providerName" 
+                    placeholder="Add hospital or provider name"
+                    class="form-input"
+                />
+            </div>
+
             <!-- Record Created On -->
             <div class="form-group">
                 <label class="form-label">Record created on</label>
@@ -119,6 +130,28 @@
                         <span>{{ option.label }}</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="form-group">
+                <label class="form-label">Tags</label>
+                <input 
+                    type="text" 
+                    v-model="tagsInput" 
+                    placeholder="Separate tags with commas (e.g. scan, follow-up)"
+                    class="form-input"
+                />
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea
+                    v-model="notes"
+                    rows="4"
+                    class="form-input"
+                    placeholder="Add any helpful notes about this record"
+                ></textarea>
             </div>
 
             <p v-if="formError" class="form-error">{{ formError }}</p>
@@ -149,6 +182,9 @@ export default {
         const fileName = ref('')
         const recordDate = ref(new Date().toISOString().split('T')[0])
         const recordType = ref('LAB_RESULT')
+        const providerName = ref('')
+        const tagsInput = ref('')
+        const notes = ref('')
         const profileMembers = ref([])
         const { fetchProfiles } = useProfiles()
         const { createRecord } = useMedicalRecords()
@@ -236,6 +272,16 @@ export default {
             selectedFiles.value.forEach(fileEntry => {
                 formData.append('files', fileEntry.file)
             })
+            if (providerName.value.trim()) {
+                formData.append('providerName', providerName.value.trim())
+            }
+            if (notes.value.trim()) {
+                formData.append('notes', notes.value.trim())
+            }
+            const tagsArray = tagsInput.value
+                ? tagsInput.value.split(',').map(tag => tag.trim()).filter(Boolean)
+                : []
+            formData.append('tags', JSON.stringify(tagsArray))
 
             try {
                 saving.value = true
@@ -280,6 +326,9 @@ export default {
             fileName,
             recordDate,
             recordType,
+            providerName,
+            tagsInput,
+            notes,
             recordTypeOptions,
             goBack,
             triggerFileUpload,

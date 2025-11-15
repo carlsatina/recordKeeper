@@ -2,6 +2,7 @@ import { RequestHandler, Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import {
     listMedicalRecords,
+    getMedicalRecord,
     createMedicalRecord,
     updateMedicalRecord,
     deleteMedicalRecord
@@ -15,6 +16,7 @@ const makeMedicalRecordsRouter = (
     const router = Router()
 
     router.get('/', authenticateUser, listMedicalRecords)
+    router.get('/:id', authenticateUser, getMedicalRecord)
     router.post(
         '/',
         authenticateUser,

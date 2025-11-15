@@ -94,6 +94,7 @@
                         class="record-item"
                         v-for="record in recentMedicalRecords"
                         :key="record.id"
+                        @click="openRecordDetail(record)"
                     >
                         <div class="record-icon">
                             <mdicon :name="getRecordIcon(record.recordType)" :size="24"/>
@@ -121,7 +122,12 @@
                     Loading medical records...
                 </div>
                 <template v-else>
-                    <div class="record-card" v-for="record in medicalRecords" :key="record.id">
+                    <div 
+                        class="record-card" 
+                        v-for="record in medicalRecords" 
+                        :key="record.id"
+                        @click="openRecordDetail(record)"
+                    >
                         <div class="record-icon-large">
                             <mdicon :name="getRecordIcon(record.recordType)" :size="24"/>
                         </div>
@@ -427,6 +433,21 @@ export default {
 
         const navigateToAddRecord = () => {
             router.push('/medical-records/add-record')
+        }
+
+        const openRecordDetail = (record) => {
+            if (!record?.id) return
+            const profileId = activeMemberId.value || record.profileId || ''
+            const profileName = activeProfileName.value || record.profile?.displayName || ''
+            const tab = activeTab.value
+            router.push({
+                path: `/medical-records/records/${record.id}`,
+                query: {
+                    profileId,
+                    profileName,
+                    from: `/medical-records?tab=${tab}`
+                }
+            })
         }
 
         // Health categories for modal
@@ -800,6 +821,7 @@ export default {
             handleTabChange,
             getTabTitle,
             navigateToAddRecord,
+            openRecordDetail,
             medicalRecords,
             medicalRecordsLoading,
             medicalRecordsError,

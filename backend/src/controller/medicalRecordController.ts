@@ -43,6 +43,27 @@ const ensureUser = (req: ExtendedRequest, res: any) => {
     return req.user
 }
 
+const parseTagsInput = (value: unknown): string[] | null => {
+    if (typeof value === 'undefined') return null
+    if (Array.isArray(value)) {
+        return value.map(tag => String(tag).trim()).filter(Boolean)
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (!trimmed.length) return []
+        try {
+            const parsed = JSON.parse(trimmed)
+            if (Array.isArray(parsed)) {
+                return parsed.map(tag => String(tag).trim()).filter(Boolean)
+            }
+        } catch {
+            // ignore JSON parse failure, fall through to comma split
+        }
+        return trimmed.split(',').map(tag => tag.trim()).filter(Boolean)
+    }
+    return []
+}
+
 const listMedicalRecords = async (req: ExtendedRequest, res: any) => {
     const user = ensureUser(req, res)
     if (!user) return
@@ -77,6 +98,44 @@ const listMedicalRecords = async (req: ExtendedRequest, res: any) => {
     })
 }
 
+const getMedicalRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const recordId = req.params.id
+    if (!recordId) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Record ID is required.'
+        })
+    }
+
+    const record = await prisma.medicalRecord.findFirst({
+        where: {
+            id: recordId,
+            profile: {
+                userId: user.id
+            }
+        },
+        include: {
+            files: true,
+            profile: true
+        }
+    })
+
+    if (!record) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Record not found.'
+        })
+    }
+
+    res.status(200).json({
+        status: 200,
+        record
+    })
+}
+
 const createMedicalRecord = async (req: ExtendedRequest, res: any) => {
     const user = ensureUser(req, res)
     if (!user) return
@@ -87,7 +146,8 @@ const createMedicalRecord = async (req: ExtendedRequest, res: any) => {
         recordType = RecordType.OTHER,
         recordDate,
         providerName,
-        notes
+        notes,
+        tags
     } = req.body
 
     if (!profileId || !title || !recordDate) {
@@ -114,7 +174,8 @@ const createMedicalRecord = async (req: ExtendedRequest, res: any) => {
             recordType: normalizeRecordType(recordType as string),
             recordDate: new Date(recordDate),
             providerName,
-            notes
+            notes,
+            tags: parseTagsInput(tags) ?? []
         },
         include: {
             files: true
@@ -171,9 +232,11 @@ const updateMedicalRecord = async (req: ExtendedRequest, res: any) => {
         recordType,
         recordDate,
         providerName,
-        notes
+        notes,
+        tags
     } = req.body
     const files = (req.files as Express.Multer.File[]) || []
+    const parsedTags = parseTagsInput(tags)
 
     const updated = await prisma.medicalRecord.update({
         where: { id: recordId },
@@ -182,7 +245,8 @@ const updateMedicalRecord = async (req: ExtendedRequest, res: any) => {
             recordType: recordType ? normalizeRecordType(recordType as string) : existing.recordType,
             recordDate: recordDate ? new Date(recordDate) : existing.recordDate,
             providerName,
-            notes
+            notes,
+            ...(parsedTags !== null ? { tags: parsedTags } : {})
         },
         include: { files: true }
     })
@@ -259,6 +323,7 @@ const deleteMedicalRecord = async (req: ExtendedRequest, res: any) => {
 
 export {
     listMedicalRecords,
+    getMedicalRecord,
     createMedicalRecord,
     updateMedicalRecord,
     deleteMedicalRecord

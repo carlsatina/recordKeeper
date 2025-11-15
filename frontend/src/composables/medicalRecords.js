@@ -86,6 +86,22 @@ export const useMedicalRecords = () => {
         return true
     }
 
+    const fetchRecordById = async(token, recordId) => {
+        if (!recordId) {
+            throw new Error('Record ID is required')
+        }
+        const res = await fetch(`${API_BASE_URL}/api/v1/medical-records/${recordId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to fetch record details')
+        }
+        return data.record
+    }
+
     return {
         records,
         loading,
@@ -93,6 +109,7 @@ export const useMedicalRecords = () => {
         fetchRecords,
         createRecord,
         updateRecord,
-        deleteRecord
+        deleteRecord,
+        fetchRecordById
     }
 }

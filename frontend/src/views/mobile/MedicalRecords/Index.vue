@@ -240,11 +240,74 @@
         </div>
 
         <!-- Profile Tab -->
-        <div v-if="activeTab === 'profile'" class="tab-content">
-            <div class="empty-state">
-                <mdicon name="account-circle" :size="64" class="empty-icon"/>
-                <p class="empty-title">Profile Settings</p>
-                <p class="empty-text">Manage your profile and family members</p>
+        <div v-if="activeTab === 'profile'" class="tab-content profile-tab">
+            <div class="profile-header">
+                <button class="back-btn" @click="router.back()">
+                    <mdicon name="arrow-left" :size="22"/>
+                </button>
+                <h2>Profile</h2>
+                <button class="icon-btn">
+                    <mdicon name="account-plus" :size="22"/>
+                </button>
+            </div>
+
+            <div class="profile-switcher" v-if="profileMembers.length">
+                <div 
+                    v-for="member in profileMembers" 
+                    :key="member.id"
+                    class="profile-avatar"
+                    :class="{ active: member.id === activeMemberId }"
+                    @click="activeMemberId = member.id"
+                >
+                    <div class="avatar-circle">
+                        <mdicon :name="activeMemberId === member.id ? 'account' : 'account-outline'" :size="28"/>
+                    </div>
+                    <span>{{ member.name }}</span>
+                </div>
+                <div class="profile-avatar add" @click="addFamilyMember">
+                    <div class="avatar-circle">
+                        <mdicon name="plus" :size="26"/>
+                    </div>
+                    <span>Add</span>
+                </div>
+            </div>
+            <div v-else class="profile-switcher empty">
+                <div class="profile-avatar add" @click="addFamilyMember">
+                    <div class="avatar-circle">
+                        <mdicon name="plus" :size="26"/>
+                    </div>
+                    <span>Add Profile</span>
+                </div>
+            </div>
+
+            <div class="profile-card">
+                <div 
+                    class="profile-row"
+                    v-for="item in profileSections"
+                    :key="item.label"
+                    @click="navigateProfileSection(item.action)"
+                >
+                    <div class="row-left">
+                        <mdicon :name="item.icon" :size="20"/>
+                        <span>{{ item.label }}</span>
+                    </div>
+                    <mdicon name="chevron-right" :size="20"/>
+                </div>
+            </div>
+
+            <div class="profile-card">
+                <div 
+                    class="profile-row"
+                    v-for="item in supportSections"
+                    :key="item.label"
+                    @click="navigateProfileSection(item.action)"
+                >
+                    <div class="row-left">
+                        <mdicon :name="item.icon" :size="20"/>
+                        <span>{{ item.label }}</span>
+                    </div>
+                    <mdicon name="chevron-right" :size="20"/>
+                </div>
             </div>
         </div>
     </div>
@@ -281,10 +344,11 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import TopBar from '@/components/MedicalRecords/TopBar.vue'
 import BottomNav from '@/components/MedicalRecords/BottomNav.vue'
+import { useProfiles } from '@/composables/profiles'
 
 export default {
     name: "MedicalRecordsMobile",
@@ -357,6 +421,55 @@ export default {
         ]
 
         // Sample medical records data
+        const profileMembers = ref([])
+        const activeMemberId = ref(null)
+
+        const profileSections = [
+            { label: 'Personal information', icon: 'account-outline', action: 'personal' },
+            { label: 'Medical Conditions', icon: 'stethoscope', action: 'conditions' },
+            { label: 'Drug Allergies', icon: 'pill', action: 'allergies' },
+            { label: 'Family History', icon: 'account-group-outline', action: 'family' }
+        ]
+
+        const supportSections = [
+            { label: 'Notifications', icon: 'bell-outline', action: 'notifications' },
+            { label: 'Settings', icon: 'cog-outline', action: 'settings' },
+            { label: 'Help Center', icon: 'help-circle-outline', action: 'help' }
+        ]
+
+        const addFamilyMember = () => {
+            router.push('/medical-records/profile/add')
+        }
+        const { fetchProfiles } = useProfiles()
+        const loadProfiles = async () => {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            const { response, error } = await fetchProfiles(token)
+            if (error.value === null && response.value?.profiles) {
+                profileMembers.value = response.value.profiles.map(profile => ({
+                    id: profile.id,
+                    name: profile.displayName || 'Profile'
+                }))
+                if (profileMembers.value.length && !activeMemberId.value) {
+                    activeMemberId.value = profileMembers.value[0].id
+                }
+            }
+        }
+
+        onMounted(() => {
+            loadProfiles()
+        })
+
+        watch(activeTab, (val) => {
+            if (val === 'profile' && profileMembers.value.length === 0) {
+                loadProfiles()
+            }
+        })
+
+        const navigateProfileSection = (section) => {
+            console.log('Navigate to', section)
+        }
+
         const medicalRecords = ref([
             {
                 id: 1,
@@ -411,7 +524,14 @@ export default {
             selectHealthCategory,
             navigateToBloodPressure,
             navigateToBloodSugar,
-            navigateToBodyWeight
+            navigateToBodyWeight,
+            profileMembers,
+            profileSections,
+            supportSections,
+            activeMemberId,
+            addFamilyMember,
+            navigateProfileSection,
+            loadProfiles
         }
     }
 }
@@ -936,6 +1056,112 @@ export default {
     margin: 0;
     line-height: 1.5;
     max-width: 280px;
+}
+
+.profile-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.profile-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.back-btn,
+.icon-btn {
+    border: none;
+    background: #f3f4f6;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #111827;
+}
+
+.profile-switcher {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.profile-switcher.empty {
+    justify-content: center;
+}
+
+.profile-avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 70px;
+    cursor: pointer;
+}
+
+.avatar-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f4f4;
+    color: #6b7280;
+}
+
+.profile-avatar.active .avatar-circle {
+    border-color: #667eea;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.profile-avatar span {
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.profile-avatar.add .avatar-circle {
+    border-color: #d1d5db;
+    background: white;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    padding: 8px 0;
+}
+
+.profile-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.profile-row:last-child {
+    border-bottom: none;
+}
+
+.profile-row .row-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #111827;
+    font-weight: 600;
 }
 
 /* Health Category Modal */

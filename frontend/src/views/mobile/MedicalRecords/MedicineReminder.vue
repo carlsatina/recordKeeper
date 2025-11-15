@@ -24,7 +24,7 @@
                     <mdicon name="chevron-right" :size="18"/>
                 </button>
             </div>
-            <button class="history-btn">History</button>
+            <button class="history-btn" @click="openHistory">History</button>
         </div>
         <div v-if="showMonthPicker" class="month-picker">
             <button v-for="option in monthOptions" :key="option.value" class="month-option" @click="selectMonth(option.value)">
@@ -154,6 +154,9 @@ export default {
         }
         const openEdit = (reminderId) => {
             router.push(`/medical-records/medicine-reminders/${reminderId}/edit`)
+        }
+        const openHistory = () => {
+            router.push('/medical-records/medicine-reminders/history')
         }
         const goToProfileTab = () => {
             router.push({
@@ -308,6 +311,28 @@ export default {
             return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
         }
 
+        const frequencyMap = {
+            'Once daily': 1,
+            'Twice daily': 2,
+            'Thrice daily': 3,
+            'Weekly': 1
+        }
+
+        const formatFrequency = (reminder) => {
+            if (reminder.slots && reminder.slots.length) {
+                return `${reminder.slots.length}x`
+            }
+            const mapped = frequencyMap[reminder.frequency]
+            if (mapped) {
+                return `${mapped}x`
+            }
+            const durationMatch = reminder.frequency?.match?.(/(\d+)/)
+            if (durationMatch) {
+                return `${durationMatch[1]}x`
+            }
+            return reminder.frequency || ''
+        }
+
         const formattedReminders = computed(() => {
             return reminders.value.map(reminder => {
                 const slots = (reminder.slots || []).map((slot, index) => {
@@ -331,7 +356,7 @@ export default {
                 return {
                     id: reminder.id,
                     title: reminder.medicineName,
-                    subtitle: `${reminder.dosage || 1} ${reminder.unit || ''}, ${reminder.intakeMethod || 'Anytime'}`,
+                    subtitle: `${formatFrequency(reminder)} · ${reminder.intakeMethod || 'Anytime'}`,
                     startDate: formatDate(reminder.startDate || reminder.medication?.startDate || reminder.createdAt),
                     slots
                 }
@@ -368,6 +393,7 @@ export default {
             formattedReminders,
             toggleReminderSlot,
             openEdit,
+            openHistory,
             showMonthPicker,
             toggleMonthPicker,
             monthOptions,
@@ -378,7 +404,8 @@ export default {
             nextWeek,
             selectDay,
             hasActiveProfile,
-            goToProfileTab
+            goToProfileTab,
+            formatFrequency
         }
     }
 }

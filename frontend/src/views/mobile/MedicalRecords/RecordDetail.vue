@@ -134,10 +134,15 @@
                                     :src="resolveFileUrl(currentViewerImage.url)"
                                     :alt="currentViewerImage.originalName || 'Attachment'"
                                     :style="viewerImageStyle"
+                                    :class="{ dragging: viewer.dragging }"
                                     @touchstart.prevent="onTouchStart"
                                     @touchmove.prevent="onTouchMove"
                                     @touchend="onTouchEnd"
                                     @touchcancel="onTouchEnd"
+                                    @mousedown.prevent="onMouseDown"
+                                    @mousemove.prevent="onMouseMove"
+                                    @mouseup="onMouseUp"
+                                    @mouseleave="onMouseUp"
                                 />
                 </div>
                 <button class="viewer-nav" @click="nextImage" :disabled="!hasMultipleImages">
@@ -191,7 +196,10 @@ export default {
         const viewer = reactive({
             open: false,
             index: 0,
-            zoom: 1
+            zoom: 1,
+            offsetX: 0,
+            offsetY: 0,
+            dragging: false
         })
         const menuOpen = ref(false)
         const menuRef = ref(null)
@@ -277,7 +285,7 @@ export default {
         })
 
         const viewerImageStyle = computed(() => ({
-            transform: `scale(${viewer.zoom})`
+            transform: `translate(${viewer.offsetX}px, ${viewer.offsetY}px) scale(${viewer.zoom})`
         }))
 
         const resolveFileUrl = (url) => {
@@ -299,33 +307,48 @@ export default {
             return `${(size / 1024).toFixed(1)} KB`
         }
 
+        const resetViewerTransform = () => {
+            viewer.zoom = 1
+            viewer.offsetX = 0
+            viewer.offsetY = 0
+            viewer.dragging = false
+        }
+
         const openViewer = (index) => {
             viewer.index = index
-            viewer.zoom = 1
+            resetViewerTransform()
             viewer.open = true
         }
 
         const closeViewer = () => {
             viewer.open = false
-            viewer.zoom = 1
+            resetViewerTransform()
         }
 
         const nextImage = () => {
             if (!hasMultipleImages.value) return
             viewer.index = (viewer.index + 1) % imageFiles.value.length
-            viewer.zoom = 1
+            resetViewerTransform()
         }
 
         const previousImage = () => {
             if (!hasMultipleImages.value) return
             viewer.index = (viewer.index - 1 + imageFiles.value.length) % imageFiles.value.length
-            viewer.zoom = 1
+            resetViewerTransform()
         }
 
         const pinchState = reactive({
             active: false,
             initialDistance: 0,
             initialZoom: 1
+        })
+
+        const dragState = reactive({
+            active: false,
+            startX: 0,
+            startY: 0,
+            initialX: 0,
+            initialY: 0
         })
 
         const clampZoom = (value) => Math.min(3, Math.max(1, value))
@@ -338,25 +361,77 @@ export default {
             return Math.hypot(dx, dy)
         }
 
+        const startDrag = (x, y) => {
+            dragState.active = true
+            dragState.startX = x
+            dragState.startY = y
+            dragState.initialX = viewer.offsetX
+            dragState.initialY = viewer.offsetY
+            viewer.dragging = true
+        }
+
+        const updateDrag = (x, y) => {
+            if (!dragState.active) return
+            const deltaX = (x - dragState.startX) / viewer.zoom
+            const deltaY = (y - dragState.startY) / viewer.zoom
+            viewer.offsetX = dragState.initialX + deltaX
+            viewer.offsetY = dragState.initialY + deltaY
+        }
+
+        const endDrag = () => {
+            dragState.active = false
+            viewer.dragging = false
+        }
+
+        const onMouseDown = (event) => {
+            if (!viewer.open) return
+            event.preventDefault()
+            startDrag(event.clientX, event.clientY)
+        }
+
+        const onMouseMove = (event) => {
+            if (!viewer.open || !dragState.active) return
+            event.preventDefault()
+            updateDrag(event.clientX, event.clientY)
+        }
+
+        const onMouseUp = () => {
+            if (!viewer.open) return
+            endDrag()
+        }
+
         const onTouchStart = (event) => {
             if (event.touches.length === 2) {
                 pinchState.active = true
                 pinchState.initialDistance = distanceBetweenTouches(event.touches)
                 pinchState.initialZoom = viewer.zoom
+                endDrag()
+            } else if (event.touches.length === 1) {
+                const touch = event.touches[0]
+                startDrag(touch.clientX, touch.clientY)
             }
         }
 
         const onTouchMove = (event) => {
-            if (!pinchState.active || event.touches.length < 2) return
-            const newDistance = distanceBetweenTouches(event.touches)
-            if (pinchState.initialDistance === 0) return
-            const scale = newDistance / pinchState.initialDistance
-            viewer.zoom = clampZoom(pinchState.initialZoom * scale)
+            if (pinchState.active && event.touches.length >= 2) {
+                const newDistance = distanceBetweenTouches(event.touches)
+                if (pinchState.initialDistance === 0) return
+                const scale = newDistance / pinchState.initialDistance
+                viewer.zoom = clampZoom(pinchState.initialZoom * scale)
+                return
+            }
+            if (event.touches.length === 1 && dragState.active) {
+                const touch = event.touches[0]
+                updateDrag(touch.clientX, touch.clientY)
+            }
         }
 
         const onTouchEnd = () => {
             if (pinchState.active) {
                 pinchState.active = false
+            }
+            if (dragState.active) {
+                endDrag()
             }
         }
 
@@ -428,7 +503,10 @@ export default {
             goToEdit,
             onTouchStart,
             onTouchMove,
-            onTouchEnd
+            onTouchEnd,
+            onMouseDown,
+            onMouseMove,
+            onMouseUp
         }
     }
 }
@@ -693,6 +771,11 @@ export default {
     max-width: 100%;
     max-height: 70vh;
     transition: transform 0.2s ease;
+    cursor: grab;
+}
+
+.viewer-image-wrapper img.dragging {
+    cursor: grabbing;
 }
 
 .viewer-controls {

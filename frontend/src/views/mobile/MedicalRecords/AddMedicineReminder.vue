@@ -48,11 +48,7 @@
                 </div>
                 <div class="schedule-row">
                     <span>Dosage</span>
-                    <div class="dosage-controls">
-                        <button @click="decrementDosage">-</button>
-                        <span>{{ dosage }}</span>
-                        <button @click="incrementDosage">+</button>
-                    </div>
+                    <div class="dosage-value">{{ dosage }}</div>
                 </div>
                 <div class="schedule-row select-row">
                     <label>Frequency</label>
@@ -164,15 +160,34 @@ export default {
             unit.value = value
             showUnitOptions.value = false
         }
-        const incrementDosage = () => (dosage.value = Math.min(10, dosage.value + 1))
-        const decrementDosage = () => (dosage.value = Math.max(1, dosage.value - 1))
+        const frequencyMultiplierMap = {
+            'Once daily': 1,
+            'Twice daily': 2,
+            'Thrice daily': 3,
+            'Weekly': 1
+        }
+
+        const parseDurationDays = (value) => {
+            if (!value) return 1
+            const match = value.match(/(\d+)/)
+            return match ? Number(match[1]) : 1
+        }
+
+        const updateCalculatedDosage = () => {
+            const days = parseDurationDays(duration.value) || 1
+            const multiplier = frequencyMultiplierMap[frequency.value] || timeSlots.value.length || 1
+            dosage.value = days * multiplier
+        }
+
         const addTimeSlot = () => {
             if (timeSlots.value.length >= maxTimeSlots) return
             timeSlots.value.push('08:00')
+            updateCalculatedDosage()
         }
         const removeTimeSlot = (index) => {
             if (timeSlots.value.length === 1) return
             timeSlots.value.splice(index, 1)
+            updateCalculatedDosage()
         }
         const sanitizedTimes = () => {
             return timeSlots.value
@@ -190,6 +205,7 @@ export default {
             timeSlots.value = times.length ? times : ['08:00']
             const start = reminder.startDate || reminder.medication?.startDate || reminder.createdAt || new Date().toISOString()
             startDate.value = start ? new Date(start).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+            updateCalculatedDosage()
         }
 
         const loadReminder = async () => {
@@ -255,11 +271,16 @@ export default {
 
         onMounted(() => {
             loadReminder()
+            updateCalculatedDosage()
         })
 
         watch(reminderId, () => {
             loadReminder()
         })
+
+        watch([frequency, duration], () => {
+            updateCalculatedDosage()
+        }, { immediate: true })
 
         return {
             goBack,
@@ -271,8 +292,6 @@ export default {
             selectUnit,
             toggleUnit,
             dosage,
-            incrementDosage,
-            decrementDosage,
             frequency,
             frequencyOptions,
             durationOptions,
@@ -417,27 +436,14 @@ export default {
     color: #0f172a;
 }
 
-.dosage-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f5f6fb;
+.dosage-value {
+    background: #eef2ff;
+    color: #4f46e5;
     padding: 8px 12px;
     border-radius: 999px;
-}
-
-.dosage-controls button {
-    border: none;
-    background: #4f46e5;
-    color: white;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: 18px;
-}
-
-.value {
-    color: #4f46e5;
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
 }
 
 .primary-btn {

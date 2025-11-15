@@ -70,7 +70,7 @@
                         <div class="reminder-content">
                             <h4 class="reminder-name">{{ reminder.medicineName }}</h4>
                             <p class="reminder-details">
-                                {{ formatDosage(reminder) }} · {{ reminder.intakeMethod || 'Anytime' }}
+                                {{ formatFrequency(reminder) }} · {{ reminder.intakeMethod || 'Anytime' }}
                             </p>
                             <div class="reminder-slot-list">
                                 <button 
@@ -724,6 +724,7 @@ export default {
                 return {
                     id: reminder.id,
                     medicineName: reminder.medicineName,
+                    frequency: reminder.frequency,
                     intakeMethod: reminder.intakeMethod,
                     dosage: reminder.dosage,
                     unit: reminder.unit,
@@ -733,10 +734,26 @@ export default {
             return remindersList.slice(0, 3)
         })
 
-        const formatDosage = (reminder) => {
-            const dosage = reminder.dosage ? `${reminder.dosage}x` : ''
-            const unit = reminder.unit || ''
-            return [dosage, unit].filter(Boolean).join(' ')
+        const frequencyMap = {
+            'Once daily': 1,
+            'Twice daily': 2,
+            'Thrice daily': 3,
+            'Weekly': 1
+        }
+
+        const formatFrequency = (reminder) => {
+            if (reminder.slots && reminder.slots.length) {
+                return `${reminder.slots.length}x`
+            }
+            const mapped = frequencyMap[reminder.frequency]
+            if (mapped) {
+                return `${mapped}x`
+            }
+            const durationMatch = reminder.frequency?.match?.(/(\d+)/)
+            if (durationMatch) {
+                return `${durationMatch[1]}x`
+            }
+            return reminder.frequency || ''
         }
 
         const toggleHomeReminder = async(reminder, reminderSlot) => {
@@ -975,7 +992,7 @@ export default {
             medicineReminders,
             remindersLoading,
             todaysReminders,
-            formatDosage,
+            formatFrequency,
             toggleHomeReminder,
             hasActiveProfile
         }

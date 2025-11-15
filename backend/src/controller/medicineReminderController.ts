@@ -138,7 +138,10 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
     }
 
     const today = new Date()
-    const referenceDate = parseReferenceDate(req.query.date as string | string[] | undefined) || today
+    const showAllReminders = req.query.all === 'true'
+    const referenceDate = showAllReminders
+        ? null
+        : parseReferenceDate(req.query.date as string | string[] | undefined) || today
     const reminders = await prisma.medicineReminder.findMany({
         where: {
             profileId: profile.id
@@ -148,16 +151,20 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
         },
         include: {
             medication: {
-                include: {
-                    logs: {
-                        where: {
-                            occurredAt: {
-                                gte: startOfDay(referenceDate),
-                                lte: endOfDay(referenceDate)
+                include: showAllReminders
+                    ? {
+                        logs: true
+                    }
+                    : {
+                        logs: {
+                            where: {
+                                occurredAt: {
+                                    gte: startOfDay(referenceDate!),
+                                    lte: endOfDay(referenceDate!)
+                                }
                             }
                         }
                     }
-                }
             }
         }
     })
@@ -177,10 +184,13 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
         const durationDays = parseDurationDays(reminder.duration)
         const endDate = new Date(startDate)
         endDate.setDate(endDate.getDate() + durationDays - 1)
-        const referenceStart = startOfDay(referenceDate).getTime()
-        const inWindow = referenceStart >= startDate.getTime() && referenceStart <= endDate.getTime()
-        if (!inWindow) {
-            continue
+        const referenceStart = referenceDate ? startOfDay(referenceDate).getTime() : null
+
+        if (!showAllReminders) {
+            const inWindow = referenceStart! >= startDate.getTime() && referenceStart! <= endDate.getTime()
+            if (!inWindow) {
+                continue
+            }
         }
 
         const scheduledTimes = getScheduledTimesForReminder(reminder)
@@ -188,12 +198,21 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
         const slots = []
 
         for (const timeStr of scheduledTimes) {
+            if (!referenceDate) {
+                slots.push({
+                    time: timeStr,
+                    status: null
+                })
+                continue
+            }
+
             const reminderDateTime = combineDateAndTime(referenceDate, timeStr)
+            const referenceDay = startOfDay(referenceDate)
             const matchedLogIndex = dayLogs.findIndex(log => formatTimeFromDate(new Date(log.occurredAt)) === timeStr)
             let slotStatus = matchedLogIndex >= 0 ? dayLogs[matchedLogIndex].status : null
 
             if (reminder.medicationId && !slotStatus) {
-                const isPastDate = startOfDay(referenceDate) < startOfDay(today)
+                const isPastDate = referenceDay < startOfDay(today)
                 const isToday = isSameDay(referenceDate, today)
                 if (isPastDate || (isToday && reminderDateTime < today)) {
                     const createdLog = await prisma.medicationLog.create({
@@ -215,10 +234,12 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
         }
 
         let status = null
-        if (slots.length && slots.every(slot => slot.status === 'taken')) {
-            status = 'taken'
-        } else if (slots.length && slots.every(slot => slot.status === 'missed')) {
-            status = 'missed'
+        if (!showAllReminders && slots.length) {
+            if (slots.every(slot => slot.status === 'taken')) {
+                status = 'taken'
+            } else if (slots.every(slot => slot.status === 'missed')) {
+                status = 'missed'
+            }
         }
 
         formatted.push({

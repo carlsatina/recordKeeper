@@ -21,6 +21,7 @@ import AddFamilyMember from '@/views/mobile/MedicalRecords/AddFamilyMember.vue'
 import PersonalInformation from '@/views/mobile/Profile/PersonalInformation.vue'
 import MedicineReminder from '@/views/mobile/MedicalRecords/MedicineReminder.vue'
 import AddMedicineReminder from '@/views/mobile/MedicalRecords/AddMedicineReminder.vue'
+import MedicineReminderHistory from '@/views/mobile/MedicalRecords/MedicineReminderHistory.vue'
 import RecordDetail from '@/views/mobile/MedicalRecords/RecordDetail.vue'
 import CarMaintenance from '@/views/LandingPage/CarMaintenance.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
@@ -107,6 +108,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/medicine-reminders/:id/edit',
     name: 'medicine-reminders-edit',
     component: AddMedicineReminder,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/medicine-reminders/history',
+    name: 'medicine-reminders-history',
+    component: MedicineReminderHistory,
     meta: { requiresAuth: true }
   },
   {

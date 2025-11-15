@@ -33,6 +33,9 @@ export const useMedicineReminders = () => {
             if (dateParam) {
                 params.append('date', dateParam)
             }
+            if (options.all) {
+                params.append('all', 'true')
+            }
             const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders?${params.toString()}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -96,6 +99,20 @@ export const useMedicineReminders = () => {
         return data.reminder
     }
 
+    const fetchAllReminders = async(token, profileId) => {
+        const params = new URLSearchParams({ profileId, all: 'true' })
+        const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders?${params.toString()}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to fetch reminders')
+        }
+        return data.reminders || []
+    }
+
     const deleteReminder = async(token, reminderId) => {
         const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders/${reminderId}`, {
             method: 'DELETE',
@@ -139,6 +156,7 @@ export const useMedicineReminders = () => {
         updateReminder,
         deleteReminder,
         setReminderStatus,
-        fetchReminderById
+        fetchReminderById,
+        fetchAllReminders
     }
 }

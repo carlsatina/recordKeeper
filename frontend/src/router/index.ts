@@ -18,6 +18,7 @@ import AddBloodPressureRecord from '@/views/mobile/MedicalRecords/AddBloodPressu
 import AddBloodSugarRecord from '@/views/mobile/MedicalRecords/AddBloodSugarRecord.vue'
 import AddBodyWeightRecord from '@/views/mobile/MedicalRecords/AddBodyWeightRecord.vue'
 import AddFamilyMember from '@/views/mobile/MedicalRecords/AddFamilyMember.vue'
+import PersonalInformation from '@/views/mobile/Profile/PersonalInformation.vue'
 import RecordDetail from '@/views/mobile/MedicalRecords/RecordDetail.vue'
 import CarMaintenance from '@/views/LandingPage/CarMaintenance.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
@@ -34,6 +35,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/profile/add',
     name: 'add-family-member',
     component: AddFamilyMember,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/profile/personal-information',
+    name: 'personal-information',
+    component: PersonalInformation,
     meta: { requiresAuth: true }
   },
   {

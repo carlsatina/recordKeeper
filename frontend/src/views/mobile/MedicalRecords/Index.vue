@@ -812,7 +812,16 @@ export default {
         }, { immediate: true })
 
         const navigateProfileSection = (section) => {
-            console.log('Navigate to', section)
+            if (section === 'personal') {
+                router.push({
+                    path: '/medical-records/profile/personal-information',
+                    query: {
+                        profileId: activeMemberId.value
+                    }
+                })
+            } else {
+                console.log('Navigate to', section)
+            }
         }
 
         return {

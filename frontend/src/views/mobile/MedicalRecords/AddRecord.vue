@@ -36,10 +36,13 @@
                 <div class="select-wrapper">
                     <select v-model="recordFor" class="form-select">
                         <option value="">Select family member</option>
-                        <option value="self">Myself</option>
-                        <option value="spouse">Spouse</option>
-                        <option value="child1">Child 1</option>
-                        <option value="child2">Child 2</option>
+                        <option 
+                            v-for="member in profileMembers" 
+                            :key="member.id" 
+                            :value="member.id"
+                        >
+                            {{ member.name }}
+                        </option>
                     </select>
                     <mdicon name="chevron-down" :size="20" class="select-icon"/>
                 </div>
@@ -111,8 +114,9 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useProfiles } from '@/composables/profiles'
 
 export default {
     name: 'AddRecordMobile',
@@ -124,6 +128,8 @@ export default {
         const fileName = ref('')
         const recordDate = ref('')
         const recordType = ref('')
+        const profileMembers = ref([])
+        const { fetchProfiles } = useProfiles()
 
         const goBack = () => {
             router.back()
@@ -156,6 +162,22 @@ export default {
             router.back()
         }
 
+        const loadProfiles = async () => {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            const { response, error } = await fetchProfiles(token)
+            if (error.value === null && response.value?.profiles) {
+                profileMembers.value = response.value.profiles.map(profile => ({
+                    id: profile.id,
+                    name: profile.displayName || 'Profile'
+                }))
+            }
+        }
+
+        onMounted(() => {
+            loadProfiles()
+        })
+
         return {
             fileInput,
             uploadedImage,
@@ -166,7 +188,8 @@ export default {
             goBack,
             triggerFileUpload,
             handleFileUpload,
-            saveRecord
+            saveRecord,
+            profileMembers
         }
     }
 }
@@ -356,10 +379,12 @@ export default {
 /* Date Input */
 .date-input-wrapper {
     position: relative;
+    width: 100%;
 }
 
 .date-input {
     padding-right: 40px;
+    width: 100%;
 }
 
 .date-icon {

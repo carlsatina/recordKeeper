@@ -8,25 +8,24 @@
         back-route="/"
     >
         <template #actions>
-            <mdicon 
-                v-if="activeTab === 'home'"
-                name="bell-outline" 
-                :size="24" 
-                class="action-icon"
-            />
-            <mdicon 
-                v-if="activeTab === 'records'"
-                name="magnify" 
-                :size="24" 
-                class="action-icon"
-            />
-            <mdicon 
-                v-if="activeTab === 'health'"
-                name="plus" 
-                :size="24" 
-                class="action-icon"
-                @click="showHealthModal = true"
-            />
+            <div class="top-bar-actions">
+                <mdicon 
+                    name="bell-outline" 
+                    :size="24" 
+                    class="action-icon"
+                />
+                <mdicon 
+                    name="magnify" 
+                    :size="24" 
+                    class="action-icon"
+                />
+                <mdicon 
+                    name="plus" 
+                    :size="24" 
+                    class="action-icon"
+                    @click="showHealthModal = true"
+                />
+            </div>
         </template>
     </TopBar>
 
@@ -806,7 +805,7 @@ export default {
 
 .action-icon {
     cursor: pointer;
-    color: #374151;
+    color: #6f7efc;
     transition: all 0.2s ease;
     padding: 4px;
     border-radius: 8px;
@@ -815,6 +814,12 @@ export default {
 .action-icon:active {
     background: #f3f4f6;
     transform: scale(0.95);
+}
+
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .content-wrapper {

@@ -9,7 +9,10 @@
                 @click="handleBack"
                 class="back-button"
             />
-            <h2 class="title">{{ title }}</h2>
+            <div class="title-wrapper">
+                <h2 class="title">{{ title }}</h2>
+                <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
+            </div>
         </div>
         <div class="right-section">
             <slot name="actions"></slot>
@@ -35,6 +38,10 @@ export default {
         backRoute: {
             type: String,
             default: '/'
+        },
+        subtitle: {
+            type: String,
+            default: ''
         }
     },
     setup(props) {
@@ -96,6 +103,17 @@ export default {
     color: #1a1a1a;
     margin: 0;
     letter-spacing: -0.3px;
+}
+
+.title-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
 }
 
 .right-section {

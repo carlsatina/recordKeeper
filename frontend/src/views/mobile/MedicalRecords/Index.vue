@@ -3,6 +3,7 @@
     <!-- Top Bar -->
     <TopBar 
         :title="getTabTitle()"
+        :subtitle="activeProfileName"
         :show-back="activeTab === 'home'"
         back-route="/"
     >
@@ -344,7 +345,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import TopBar from '@/components/MedicalRecords/TopBar.vue'
 import BottomNav from '@/components/MedicalRecords/BottomNav.vue'
@@ -420,9 +421,8 @@ export default {
             { height: '80%' }
         ]
 
-        // Sample medical records data
         const profileMembers = ref([])
-        const activeMemberId = ref(null)
+        const activeMemberId = ref(localStorage.getItem('selectedProfileId'))
 
         const profileSections = [
             { label: 'Personal information', icon: 'account-outline', action: 'personal' },
@@ -440,18 +440,47 @@ export default {
         const addFamilyMember = () => {
             router.push('/medical-records/profile/add')
         }
+
+        const selectProfileMember = (member) => {
+            activeMemberId.value = member.id
+            localStorage.setItem('selectedProfileId', member.id)
+            localStorage.setItem('selectedProfileName', member.name)
+            router.push('/')
+        }
+
+        const activeProfileName = computed(() => {
+            const active = profileMembers.value.find(member => member.id === activeMemberId.value)
+            if (active) {
+                return active.name
+            }
+            return localStorage.getItem('selectedProfileName') || ''
+        })
+
         const { fetchProfiles } = useProfiles()
         const loadProfiles = async () => {
             const token = localStorage.getItem('token')
-            if (!token) return
+            if (!token) {
+                profileMembers.value = []
+                return
+            }
             const { response, error } = await fetchProfiles(token)
             if (error.value === null && response.value?.profiles) {
                 profileMembers.value = response.value.profiles.map(profile => ({
                     id: profile.id,
                     name: profile.displayName || 'Profile'
                 }))
-                if (profileMembers.value.length && !activeMemberId.value) {
-                    activeMemberId.value = profileMembers.value[0].id
+                if (profileMembers.value.length > 0) {
+                    const savedId = localStorage.getItem('selectedProfileId')
+                    const match = profileMembers.value.find(member => member.id === savedId)
+                    if (match) {
+                        activeMemberId.value = match.id
+                    } else {
+                        activeMemberId.value = profileMembers.value[0].id
+                        localStorage.setItem('selectedProfileId', activeMemberId.value)
+                        localStorage.setItem('selectedProfileName', profileMembers.value[0].name)
+                    }
+                } else {
+                    activeMemberId.value = null
                 }
             }
         }
@@ -531,6 +560,8 @@ export default {
             activeMemberId,
             addFamilyMember,
             navigateProfileSection,
+            selectProfileMember,
+            activeProfileName,
             loadProfiles
         }
     }

@@ -701,12 +701,13 @@ export default {
 .action-icon-wrapper {
     width: 64px;
     height: 64px;
-    background: #f0f4ff;
-    border-radius: 12px;
+    background: linear-gradient(135deg, #6f7efc 0%, #9b57f4 100%);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #667eea;
+    color: white;
+    box-shadow: 0 8px 20px rgba(111, 126, 252, 0.3);
 }
 
 .action-card-large h4 {

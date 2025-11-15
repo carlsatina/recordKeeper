@@ -97,7 +97,7 @@ export const useMedicineReminders = () => {
         return true
     }
 
-    const setReminderStatus = async(token, reminderId, status, date) => {
+    const setReminderStatus = async(token, reminderId, status, date, time) => {
         const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders/${reminderId}/logs`, {
             method: 'POST',
             headers: {
@@ -106,7 +106,8 @@ export const useMedicineReminders = () => {
             },
             body: JSON.stringify({
                 status,
-                date: toDateString(date)
+                date: toDateString(date),
+                time
             })
         })
         const data = await res.json()

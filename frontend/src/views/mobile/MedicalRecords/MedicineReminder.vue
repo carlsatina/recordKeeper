@@ -75,7 +75,6 @@
                     class="reminder-card"
                     v-for="reminder in formattedReminders"
                     :key="reminder.id"
-                    @click="toggleReminder(reminder)"
                 >
                     <div class="pill-icon">
                         <mdicon name="pill" :size="22"/>
@@ -85,9 +84,17 @@
                         <p class="reminder-details">{{ reminder.subtitle }}</p>
                         <p class="reminder-start">Start: {{ reminder.startDate }}</p>
                     </div>
-                    <div class="reminder-meta">
-                        <span class="reminder-time">{{ reminder.time }}</span>
-                        <span class="status-indicator" :class="{ checked: reminder.status === 'taken' }"></span>
+                    <div class="reminder-slots">
+                        <button 
+                            class="slot-pill" 
+                            v-for="slot in reminder.slots" 
+                            :key="slot.id"
+                            :class="{ checked: slot.status === 'taken' }"
+                            @click.stop="toggleReminderSlot(reminder, slot)"
+                        >
+                            <span class="slot-time">{{ slot.label }}</span>
+                            <span class="slot-status" v-if="slot.status">{{ slot.status }}</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -293,27 +300,50 @@ export default {
         }
 
         const formattedReminders = computed(() => {
-            return reminders.value.map(reminder => ({
-                id: reminder.id,
-                title: reminder.medicineName,
-                subtitle: `${reminder.dosage || 1} ${reminder.unit || ''}, ${reminder.intakeMethod || 'Anytime'}`,
-                time: formatTime(reminder.time),
-                startDate: formatDate(reminder.startDate || reminder.medication?.startDate || reminder.createdAt),
-                status: reminder.status || null
-            }))
+            return reminders.value.map(reminder => {
+                const slots = (reminder.slots || []).map((slot, index) => {
+                    const rawTime = typeof slot === 'string' ? slot : slot.time
+                    return {
+                        id: `${reminder.id}-${index}-${rawTime}`,
+                        rawTime,
+                        label: formatTime(rawTime),
+                        status: slot.status || null
+                    }
+                })
+                if (!slots.length) {
+                    const fallbackTime = reminder.time || '08:00'
+                    slots.push({
+                        id: `${reminder.id}-0-${fallbackTime}`,
+                        rawTime: fallbackTime,
+                        label: formatTime(fallbackTime),
+                        status: reminder.status || null
+                    })
+                }
+                return {
+                    id: reminder.id,
+                    title: reminder.medicineName,
+                    subtitle: `${reminder.dosage || 1} ${reminder.unit || ''}, ${reminder.intakeMethod || 'Anytime'}`,
+                    startDate: formatDate(reminder.startDate || reminder.medication?.startDate || reminder.createdAt),
+                    slots
+                }
+            })
         })
 
-        const toggleReminder = async(reminder) => {
+        const toggleReminderSlot = async(reminder, slot) => {
             if (!hasActiveProfile.value) return
             const token = localStorage.getItem('token')
             if (!token) return
-            const newStatus = reminder.status === 'taken' ? 'pending' : 'taken'
+            const newStatus = slot.status === 'taken' ? 'pending' : 'taken'
             try {
-                await setReminderStatus(token, reminder.id, newStatus, currentDate.value)
-                const target = reminders.value.find(r => r.id === reminder.id)
-                if (target) {
-                    target.status = newStatus === 'pending' ? null : newStatus
+                await setReminderStatus(token, reminder.id, newStatus, currentDate.value, slot.rawTime)
+                const targetReminder = reminders.value.find(r => r.id === reminder.id)
+                if (targetReminder?.slots) {
+                    const targetSlot = targetReminder.slots.find(s => s.time === slot.rawTime)
+                    if (targetSlot) {
+                        targetSlot.status = newStatus === 'pending' ? null : newStatus
+                    }
                 }
+                slot.status = newStatus === 'pending' ? null : newStatus
             } catch (err) {
                 alert(err.message || 'Unable to update reminder.')
             }
@@ -327,7 +357,7 @@ export default {
             weekDays,
             remindersLoading,
             formattedReminders,
-            toggleReminder,
+            toggleReminderSlot,
             showMonthPicker,
             toggleMonthPicker,
             monthOptions,
@@ -570,30 +600,34 @@ export default {
     font-size: 12px;
 }
 
-.reminder-meta {
+.reminder-slots {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
 }
 
-.reminder-time {
-    font-weight: 600;
+.slot-pill {
+    border: none;
+    background: rgba(79, 70, 229, 0.08);
     color: #4f46e5;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.status-indicator {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #d1d5db;
-    transition: all 0.2s ease;
+.slot-pill.checked {
+    background: #4f46e5;
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
-.status-indicator.checked {
-    border-color: #4ade80;
-    background: #4ade80;
-    box-shadow: inset 0 0 0 3px white;
+.slot-status {
+    font-size: 12px;
+    text-transform: capitalize;
 }
 
 .empty-state {

@@ -52,6 +52,17 @@ const isSameDay = (a: Date, b: Date) => {
     return startOfDay(a).getTime() === startOfDay(b).getTime()
 }
 
+const padTimeUnit = (value: number) => value.toString().padStart(2, '0')
+
+const normalizeTimeValue = (value?: string | null) => {
+    if (typeof value !== 'string') return null
+    const match = value.trim().match(/^(\d{1,2})(?::(\d{1,2}))?$/)
+    if (!match) return null
+    const hours = Math.min(23, Math.max(0, Number(match[1])))
+    const minutes = Math.min(59, Math.max(0, Number(match[2] ?? '0')))
+    return `${padTimeUnit(hours)}:${padTimeUnit(minutes)}`
+}
+
 const combineDateAndTime = (date: Date, time?: string | null) => {
     const result = new Date(date)
     if (time) {
@@ -82,6 +93,28 @@ const getLogForDate = async(medicationId: string, reference: Date) => {
             }
         }
     })
+}
+
+const getLogForExactDateTime = async(medicationId: string, dateTime: Date) => {
+    return prisma.medicationLog.findFirst({
+        where: {
+            medicationId,
+            occurredAt: dateTime
+        }
+    })
+}
+
+const formatTimeFromDate = (date: Date) => {
+    return `${padTimeUnit(date.getHours())}:${padTimeUnit(date.getMinutes())}`
+}
+
+const getScheduledTimesForReminder = (reminder: any) => {
+    const normalized = Array.isArray(reminder.times)
+        ? reminder.times.map((value: string) => normalizeTimeValue(value)).filter(Boolean)
+        : []
+    if (normalized.length) return normalized as string[]
+    const single = normalizeTimeValue(reminder.time)
+    return single ? [single] : []
 }
 
 const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
@@ -150,28 +183,49 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
             continue
         }
 
-        let status = reminder.medication?.logs?.[0]?.status || null
-        if (reminder.medicationId && !status) {
-            const reminderDateTime = combineDateAndTime(referenceDate, reminder.time)
-            const hasExistingLog = reminder.medication?.logs?.length
-            const isPastDate = startOfDay(referenceDate) < startOfDay(today)
-            const isToday = isSameDay(referenceDate, today)
+        const scheduledTimes = getScheduledTimesForReminder(reminder)
+        const dayLogs = reminder.medication?.logs ? [...reminder.medication.logs] : []
+        const slots = []
 
-            if (!hasExistingLog && (isPastDate || (isToday && reminderDateTime < today))) {
-                await prisma.medicationLog.create({
-                    data: {
-                        medicationId: reminder.medicationId,
-                        occurredAt: reminderDateTime,
-                        status: 'missed'
-                    }
-                })
-                status = 'missed'
+        for (const timeStr of scheduledTimes) {
+            const reminderDateTime = combineDateAndTime(referenceDate, timeStr)
+            const matchedLogIndex = dayLogs.findIndex(log => formatTimeFromDate(new Date(log.occurredAt)) === timeStr)
+            let slotStatus = matchedLogIndex >= 0 ? dayLogs[matchedLogIndex].status : null
+
+            if (reminder.medicationId && !slotStatus) {
+                const isPastDate = startOfDay(referenceDate) < startOfDay(today)
+                const isToday = isSameDay(referenceDate, today)
+                if (isPastDate || (isToday && reminderDateTime < today)) {
+                    const createdLog = await prisma.medicationLog.create({
+                        data: {
+                            medicationId: reminder.medicationId,
+                            occurredAt: reminderDateTime,
+                            status: 'missed'
+                        }
+                    })
+                    slotStatus = createdLog.status
+                    dayLogs.push(createdLog)
+                }
             }
+
+            slots.push({
+                time: timeStr,
+                status: slotStatus
+            })
         }
+
+        let status = null
+        if (slots.length && slots.every(slot => slot.status === 'taken')) {
+            status = 'taken'
+        } else if (slots.length && slots.every(slot => slot.status === 'missed')) {
+            status = 'missed'
+        }
+
         formatted.push({
             ...reminder,
             status,
-            startDate: startDateRaw
+            startDate: startDateRaw,
+            slots
         })
     }
 
@@ -197,6 +251,10 @@ const createMedicineReminder = async(req: ExtendedRequest, res: any) => {
         notes
     } = req.body
     const startDateInput = req.body.startDate
+    const timesInput = Array.isArray(req.body.times) ? req.body.times : []
+    const normalizedTimes = timesInput.map((value: string) => normalizeTimeValue(value)).filter(Boolean) as string[]
+    const fallbackTime = normalizeTimeValue(time)
+    const scheduleTimes = normalizedTimes.length ? normalizedTimes : (fallbackTime ? [fallbackTime] : [])
 
     if (!profileId || !medicineName || !frequency) {
         return res.status(400).json({
@@ -243,7 +301,8 @@ const createMedicineReminder = async(req: ExtendedRequest, res: any) => {
             unit,
             dosage: typeof dosage === 'number' ? dosage : Number(dosage) || 1,
             frequency,
-            time,
+            time: scheduleTimes[0] || null,
+            times: scheduleTimes,
             duration,
             intakeMethod,
             notes
@@ -282,7 +341,8 @@ const updateMedicineReminder = async(req: ExtendedRequest, res: any) => {
         intakeMethod,
         notes,
         active,
-        startDate
+        startDate,
+        times
     } = req.body
 
     const data: any = {}
@@ -298,6 +358,19 @@ const updateMedicineReminder = async(req: ExtendedRequest, res: any) => {
     if (typeof intakeMethod !== 'undefined') data.intakeMethod = intakeMethod
     if (typeof notes !== 'undefined') data.notes = notes
     if (typeof active !== 'undefined') data.active = Boolean(active)
+    if (typeof times !== 'undefined') {
+        if (Array.isArray(times)) {
+            const normalized = times.map((value: string) => normalizeTimeValue(value)).filter(Boolean) as string[]
+            data.times = normalized
+            data.time = normalized[0] || data.time
+        } else {
+            const normalizedSingle = normalizeTimeValue(times)
+            if (normalizedSingle) {
+                data.times = [normalizedSingle]
+                data.time = normalizedSingle
+            }
+        }
+    }
 
     if (existing.medicationId) {
         const medicationData: any = {}
@@ -307,6 +380,12 @@ const updateMedicineReminder = async(req: ExtendedRequest, res: any) => {
             const newDosage = typeof dosage !== 'undefined' ? dosage : existing.dosage
             const newUnit = typeof unit !== 'undefined' ? unit : existing.unit
             medicationData.dosage = `${newDosage || 1} ${newUnit || ''}`.trim()
+        }
+        if (typeof startDate !== 'undefined') {
+            const parsedStart = new Date(startDate)
+            if (!Number.isNaN(parsedStart.getTime())) {
+                medicationData.startDate = parsedStart
+            }
         }
         if (typeof startDate !== 'undefined') {
             const parsedStart = new Date(startDate)
@@ -367,7 +446,7 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
     if (!user) return
 
     const reminderId = req.params.id
-    const { status, date } = req.body
+    const { status, date, time } = req.body
 
     if (!['taken', 'missed', 'pending'].includes(status)) {
         return res.status(400).json({
@@ -384,9 +463,18 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
         })
     }
 
+    const scheduleTimes = getScheduledTimesForReminder(reminder)
+    const normalizedTime = normalizeTimeValue(time) || scheduleTimes[0]
+    if (!normalizedTime || !scheduleTimes.includes(normalizedTime)) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Invalid time slot for this reminder.'
+        })
+    }
+
     const referenceDate = parseReferenceDate(date as string | string[] | undefined) || new Date()
-    const logDateTime = combineDateAndTime(referenceDate, reminder.time)
-    const existingLog = await getLogForDate(reminder.medicationId, referenceDate)
+    const logDateTime = combineDateAndTime(referenceDate, normalizedTime)
+    const existingLog = await getLogForExactDateTime(reminder.medicationId, logDateTime)
 
     if (status === 'pending') {
         if (existingLog) {
@@ -396,7 +484,8 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
         }
         return res.status(200).json({
             status: 200,
-            log: null
+            log: null,
+            time: normalizedTime
         })
     }
 
@@ -409,7 +498,8 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
         })
         return res.status(200).json({
             status: 200,
-            log: updated
+            log: updated,
+            time: normalizedTime
         })
     } else {
         const created = await prisma.medicationLog.create({
@@ -421,7 +511,8 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
         })
         return res.status(200).json({
             status: 200,
-            log: created
+            log: created,
+            time: normalizedTime
         })
     }
 }

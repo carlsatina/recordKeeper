@@ -75,7 +75,7 @@
                                 {{ formatDosage(reminder) }} · {{ reminder.intakeMethod || 'Anytime' }}
                             </p>
                         </div>
-                        <span class="reminder-time">{{ reminder.time || '—' }}</span>
+                        <span class="reminder-time">{{ reminder.label }}</span>
                     </div>
                     <div 
                         v-if="!todaysReminders.length" 
@@ -683,8 +683,37 @@ export default {
             return 'High'
         }
 
+        const formatReminderTime = (timeString) => {
+            if (!timeString) return '—'
+            const [hour, minute] = timeString.split(':')
+            const date = new Date()
+            date.setHours(Number(hour), Number(minute))
+            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        }
+
         const todaysReminders = computed(() => {
-            return medicineReminders.value.slice(0, 3)
+            const slots = []
+            medicineReminders.value.forEach((reminder) => {
+                const reminderSlots = reminder.slots && reminder.slots.length
+                    ? reminder.slots
+                    : [{ time: reminder.time, status: reminder.status }]
+                reminderSlots.forEach((slot) => {
+                    const rawTime = typeof slot === 'string' ? slot : slot.time
+                    if (!rawTime) return
+                    slots.push({
+                        id: `${reminder.id}-${rawTime}`,
+                        reminderId: reminder.id,
+                        medicineName: reminder.medicineName,
+                        intakeMethod: reminder.intakeMethod,
+                        dosage: reminder.dosage,
+                        unit: reminder.unit,
+                        rawTime,
+                        status: slot.status || null,
+                        label: formatReminderTime(rawTime)
+                    })
+                })
+            })
+            return slots.sort((a, b) => a.rawTime.localeCompare(b.rawTime)).slice(0, 3)
         })
 
         const formatDosage = (reminder) => {
@@ -693,16 +722,20 @@ export default {
             return [dosage, unit].filter(Boolean).join(' ')
         }
 
-        const toggleHomeReminder = async(reminder) => {
+        const toggleHomeReminder = async(reminderSlot) => {
             const token = localStorage.getItem('token')
             if (!token) return
-            const newStatus = reminder.status === 'taken' ? 'pending' : 'taken'
+            const newStatus = reminderSlot.status === 'taken' ? 'pending' : 'taken'
             try {
-                await setMedicineReminderStatus(token, reminder.id, newStatus, new Date())
-                const target = medicineReminders.value.find(r => r.id === reminder.id)
-                if (target) {
-                    target.status = newStatus === 'pending' ? null : newStatus
+                await setMedicineReminderStatus(token, reminderSlot.reminderId, newStatus, new Date(), reminderSlot.rawTime)
+                const target = medicineReminders.value.find(r => r.id === reminderSlot.reminderId)
+                if (target?.slots) {
+                    const targetSlot = target.slots.find(slot => slot.time === reminderSlot.rawTime)
+                    if (targetSlot) {
+                        targetSlot.status = newStatus === 'pending' ? null : newStatus
+                    }
                 }
+                reminderSlot.status = newStatus === 'pending' ? null : newStatus
             } catch (err) {
                 console.error(err)
             }

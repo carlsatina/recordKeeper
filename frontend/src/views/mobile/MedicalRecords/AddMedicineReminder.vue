@@ -65,10 +65,34 @@
                     </div>
                 </div>
                 <div class="schedule-row select-row">
-                    <label>Time</label>
-                    <div class="styled-select">
-                        <input type="time" v-model="time"/>
+                    <label>Times per day</label>
+                    <div class="time-list">
+                        <div 
+                            class="time-chip" 
+                            v-for="(slot, index) in timeSlots" 
+                            :key="`time-${index}`"
+                        >
+                            <div class="styled-select compact">
+                                <input type="time" v-model="timeSlots[index]"/>
+                            </div>
+                            <button 
+                                class="remove-time" 
+                                type="button" 
+                                @click="removeTimeSlot(index)" 
+                                v-if="timeSlots.length > 1"
+                            >
+                                <mdicon name="close" :size="16"/>
+                            </button>
+                        </div>
                     </div>
+                    <button 
+                        class="add-time-btn" 
+                        type="button" 
+                        @click="addTimeSlot" 
+                        :disabled="timeSlots.length >= maxTimeSlots"
+                    >
+                        + Add Time
+                    </button>
                 </div>
                 <div class="schedule-row select-row">
                     <label>Duration</label>
@@ -115,7 +139,8 @@ export default {
         const unit = ref('Tablet')
         const dosage = ref(1)
         const frequency = ref('Once daily')
-        const time = ref('08:00')
+        const timeSlots = ref(['08:00'])
+        const maxTimeSlots = 6
         const duration = ref('5 days')
         const intakeMethod = ref('Before meal')
         const startDate = ref(new Date().toISOString().slice(0, 10))
@@ -135,11 +160,29 @@ export default {
         }
         const incrementDosage = () => (dosage.value = Math.min(10, dosage.value + 1))
         const decrementDosage = () => (dosage.value = Math.max(1, dosage.value - 1))
+        const addTimeSlot = () => {
+            if (timeSlots.value.length >= maxTimeSlots) return
+            timeSlots.value.push('08:00')
+        }
+        const removeTimeSlot = (index) => {
+            if (timeSlots.value.length === 1) return
+            timeSlots.value.splice(index, 1)
+        }
+        const sanitizedTimes = () => {
+            return timeSlots.value
+                .map((value) => value?.trim())
+                .filter((value) => Boolean(value))
+        }
         const saveReminder = async () => {
             const token = localStorage.getItem('token')
             const profileId = localStorage.getItem('selectedProfileId')
             if (!token || !profileId) {
                 alert('Please select a profile first.')
+                return
+            }
+            const times = sanitizedTimes()
+            if (!times.length) {
+                alert('Please add at least one time for this reminder.')
                 return
             }
             try {
@@ -149,7 +192,8 @@ export default {
                     unit: unit.value,
                     dosage: dosage.value,
                     frequency: frequency.value,
-                    time: time.value,
+                    time: times[0],
+                    times,
                     duration: duration.value,
                     intakeMethod: intakeMethod.value,
                     startDate: startDate.value
@@ -173,12 +217,15 @@ export default {
             decrementDosage,
             frequency,
             frequencyOptions,
-            time,
             durationOptions,
             duration,
             intakeMethod,
             intakeOptions,
             startDate,
+            timeSlots,
+            maxTimeSlots,
+            addTimeSlot,
+            removeTimeSlot,
             saveReminder
         }
     }
@@ -385,6 +432,47 @@ export default {
 .styled-select input[type="time"]:focus,
 .styled-select input[type="date"]:focus {
     outline: none;
+}
+
+.styled-select.compact {
+    min-width: 120px;
+    flex: 1;
+}
+
+.time-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.time-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.remove-time {
+    border: none;
+    background: rgba(99, 102, 241, 0.15);
+    color: #4f46e5;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-time-btn {
+    align-self: flex-start;
+    border: none;
+    background: rgba(79, 70, 229, 0.12);
+    color: #4f46e5;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 600;
+    margin-top: 4px;
 }
 
 </style>

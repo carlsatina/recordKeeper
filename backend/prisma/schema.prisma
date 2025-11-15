@@ -173,6 +173,7 @@ model MedicineReminder {
   dosage       Int?        @default(1)
   frequency    String
   time         String?
+  times        String[]    @default([])
   duration     String?
   intakeMethod String?
   notes        String?

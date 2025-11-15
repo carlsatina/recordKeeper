@@ -68,25 +68,67 @@
 
 <script>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { API_BASE_URL } from '@/constants/config'
 
 export default {
     name: 'AddBodyWeightRecord',
     setup() {
         const router = useRouter()
+        const route = useRoute()
         const weight = ref('')
         const notes = ref('')
         const readingDate = ref(new Date().toISOString().slice(0, 10))
         const readingTime = ref(new Date().toISOString().slice(11, 16))
+        const saving = ref(false)
+        const profileIdFromQuery = Array.isArray(route.query.profileId) ? route.query.profileId[0] : route.query.profileId
+        const profileNameFromQuery = Array.isArray(route.query.profileName) ? route.query.profileName[0] : route.query.profileName
+        const activeProfileId = profileIdFromQuery || localStorage.getItem('selectedProfileId')
+        const activeProfileName = ref(profileNameFromQuery || localStorage.getItem('selectedProfileName') || 'Profile')
+        if (activeProfileId) {
+            localStorage.setItem('selectedProfileId', activeProfileId)
+        }
+        if (activeProfileName.value) {
+            localStorage.setItem('selectedProfileName', activeProfileName.value)
+        }
 
-        const saveRecord = () => {
-            console.log('Saving body weight', {
-                weight: weight.value,
-                notes: notes.value,
-                readingDate: readingDate.value,
-                readingTime: readingTime.value
-            })
-            router.back()
+        const saveRecord = async () => {
+            if (!activeProfileId) {
+                alert('Please select a profile first.')
+                return
+            }
+            if (!weight.value) {
+                return
+            }
+            saving.value = true
+            const token = localStorage.getItem('token')
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/vitals/body-weight`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        profileId: activeProfileId,
+                        weight: weight.value,
+                        notes: notes.value,
+                        recordedAt: `${readingDate.value}T${readingTime.value}:00`
+                    })
+                })
+                const data = await res.json()
+                if (data.status === 201) {
+                    router.replace({
+                        path: '/medical-records/body-weight',
+                        query: {
+                            profileId: activeProfileId,
+                            profileName: activeProfileName.value
+                        }
+                    })
+                }
+            } finally {
+                saving.value = false
+            }
         }
 
         return {
@@ -95,7 +137,9 @@ export default {
             notes,
             readingDate,
             readingTime,
-            saveRecord
+            saveRecord,
+            activeProfileName,
+            saving
         }
     }
 }
@@ -268,5 +312,16 @@ export default {
     padding: 16px;
     cursor: pointer;
     box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3);
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.profile-chip {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
 }
 </style>

@@ -70,6 +70,7 @@
 <script>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_BASE_URL } from '@/constants/config'
 
 export default {
     name: 'AddBloodSugarRecord',
@@ -79,15 +80,35 @@ export default {
         const context = ref('fasting')
         const readingDate = ref(new Date().toISOString().slice(0, 10))
         const readingTime = ref(new Date().toISOString().slice(11, 16))
+        const saving = ref(false)
+        const activeProfileId = localStorage.getItem('selectedProfileId')
+        const activeProfileName = ref(localStorage.getItem('selectedProfileName') || 'Profile')
 
-        const saveRecord = () => {
-            console.log('Saving blood sugar', {
-                reading: reading.value,
-                context: context.value,
-                readingDate: readingDate.value,
-                readingTime: readingTime.value
-            })
-            router.back()
+        const saveRecord = async () => {
+            if (!activeProfileId) {
+                alert('Please select a profile first.')
+                return
+            }
+            saving.value = true
+            const token = localStorage.getItem('token')
+            try {
+                await fetch(`${API_BASE_URL}/api/v1/vitals/blood-sugar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        profileId: activeProfileId,
+                        reading: reading.value,
+                        context: context.value,
+                        recordedAt: `${readingDate.value}T${readingTime.value}:00`
+                    })
+                })
+                router.back()
+            } finally {
+                saving.value = false
+            }
         }
 
         return {
@@ -96,7 +117,9 @@ export default {
             context,
             readingDate,
             readingTime,
-            saveRecord
+            saveRecord,
+            activeProfileName,
+            saving
         }
     }
 }
@@ -235,5 +258,16 @@ select:focus {
     padding: 16px;
     cursor: pointer;
     box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3);
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.profile-chip {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
 }
 </style>

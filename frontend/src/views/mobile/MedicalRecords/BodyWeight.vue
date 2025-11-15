@@ -5,7 +5,10 @@
         <button class="back-btn" @click="goBack">
             <mdicon name="arrow-left" :size="24"/>
         </button>
-        <h2 class="page-title">Body Weight</h2>
+        <div class="title-block">
+            <h2 class="page-title">Body Weight</h2>
+            <p class="profile-subtitle">{{ activeProfileName }}</p>
+        </div>
         <button class="menu-btn">
             <mdicon name="dots-vertical" :size="24"/>
         </button>
@@ -52,20 +55,24 @@
                             <stop offset="100%" style="stop-color:#667eea;stop-opacity:0.05" />
                         </linearGradient>
                     </defs>
-                    <path d="M 0 40 L 40 38 L 80 35 L 120 37 L 160 34 L 200 32 L 240 30" 
-                          fill="url(#weightGradient)" 
-                          stroke="none"/>
-                    <path d="M 0 40 L 40 38 L 80 35 L 120 37 L 160 34 L 200 32 L 240 30" 
-                          fill="none" 
-                          stroke="#667eea" 
-                          stroke-width="2"/>
-                    <circle cx="0" cy="40" r="3" fill="#667eea"/>
-                    <circle cx="40" cy="38" r="3" fill="#667eea"/>
-                    <circle cx="80" cy="35" r="3" fill="#667eea"/>
-                    <circle cx="120" cy="37" r="3" fill="#667eea"/>
-                    <circle cx="160" cy="34" r="3" fill="#667eea"/>
-                    <circle cx="200" cy="32" r="3" fill="#667eea"/>
-                    <circle cx="240" cy="30" r="3" fill="#667eea"/>
+                    <path 
+                        v-if="chartPath" 
+                        :d="chartPath" 
+                        fill="url(#weightGradient)" 
+                        stroke="none"/>
+                    <path 
+                        v-if="chartPath" 
+                        :d="chartPath" 
+                        fill="none" 
+                        stroke="#667eea" 
+                        stroke-width="2"/>
+                    <circle 
+                        v-for="(point, index) in chartPoints" 
+                        :key="index" 
+                        :cx="point.x" 
+                        :cy="point.y" 
+                        r="3" 
+                        fill="#667eea"/>
                 </svg>
                 <div class="chart-x-labels">
                     <span v-for="day in weekDaysLong" :key="day">{{ day }}</span>
@@ -96,54 +103,73 @@
 </template>
 
 <script>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { API_BASE_URL } from '@/constants/config'
 
 export default {
     name: 'BodyWeightDetail',
     setup() {
         const router = useRouter()
+        const route = useRoute()
         const selectedPeriod = ref('Week')
         const timePeriods = ['Day', 'Week', 'Month', 'Year']
         const dateRange = ref('05 Jan - 11 Jan')
+        const profileIdFromQuery = Array.isArray(route.query.profileId) ? route.query.profileId[0] : route.query.profileId
+        const profileNameFromQuery = Array.isArray(route.query.profileName) ? route.query.profileName[0] : route.query.profileName
+        const activeProfileId = ref(profileIdFromQuery || localStorage.getItem('selectedProfileId'))
+        const activeProfileName = ref(profileNameFromQuery || localStorage.getItem('selectedProfileName') || 'Profile')
+        if (activeProfileId.value) {
+            localStorage.setItem('selectedProfileId', activeProfileId.value)
+        }
+        if (activeProfileName.value) {
+            localStorage.setItem('selectedProfileName', activeProfileName.value)
+        }
         const weekDaysLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-        const weightRecords = ref([
-            {
-                id: 1,
-                date: 'Saturday, January 11',
-                weight: 68.5,
-                change: -0.3,
-                status: 'Normal'
-            },
-            {
-                id: 2,
-                date: 'Friday, January 10',
-                weight: 68.8,
-                change: -0.2,
-                status: 'Normal'
-            },
-            {
-                id: 3,
-                date: 'Thursday, January 09',
-                weight: 69.0,
-                change: 0.1,
-                status: 'Normal'
-            },
-            {
-                id: 4,
-                date: 'Wednesday, January 08',
-                weight: 68.9,
-                change: -0.4,
-                status: 'Normal'
+        const weightRecords = ref([])
+        const loadRecords = async () => {
+            const token = localStorage.getItem('token')
+            if (!token || !activeProfileId.value) {
+                weightRecords.value = []
+                return
             }
-        ])
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/v1/vitals/body-weight?profileId=${activeProfileId.value}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                const data = await res.json()
+                if (data.status === 200) {
+                    weightRecords.value = data.records.map((entry, index, arr) => {
+                        const previous = arr[index - 1]
+                        const change = previous ? +(entry.valueNumber - previous.valueNumber).toFixed(1) : 0
+                        return {
+                            id: entry.id,
+                            date: new Date(entry.recordedAt).toLocaleDateString(),
+                            weight: entry.valueNumber,
+                            change,
+                            status: change > 0 ? 'Increase' : (change < 0 ? 'Decrease' : 'Stable')
+                        }
+                    })
+                }
+            } catch (err) {
+                console.error(err)
+            }
+        }
 
         const goBack = () => {
-            router.back()
+            router.push({ path: '/medical-records', query: { tab: 'health' } })
         }
         const goToAddRecord = () => {
-            router.push('/medical-records/body-weight/add')
+            router.push({
+                path: '/medical-records/body-weight/add',
+                query: {
+                    profileId: activeProfileId.value,
+                    profileName: activeProfileName.value
+                }
+            })
         }
 
         const previousWeek = () => {
@@ -154,6 +180,60 @@ export default {
             console.log('Next week')
         }
 
+        onMounted(() => {
+            loadRecords()
+        })
+
+        watch(
+            () => route.query.profileId,
+            (newVal) => {
+                const profileId = Array.isArray(newVal) ? newVal[0] : newVal
+                if (profileId && profileId !== activeProfileId.value) {
+                    activeProfileId.value = profileId
+                    localStorage.setItem('selectedProfileId', profileId)
+                    loadRecords()
+                }
+            }
+        )
+
+        watch(
+            () => route.query.profileName,
+            (newVal) => {
+                const profileName = Array.isArray(newVal) ? newVal[0] : newVal
+                if (profileName) {
+                    activeProfileName.value = profileName
+                    localStorage.setItem('selectedProfileName', profileName)
+                }
+            }
+        )
+
+        const chartPoints = computed(() => {
+            const weights = weightRecords.value.map(record => Number(record.weight)).filter(val => !Number.isNaN(val))
+            if (weights.length === 0) {
+                return []
+            }
+            const max = Math.max(...weights)
+            const min = Math.min(...weights)
+            const range = (max - min) || 1
+            const width = 280
+            const height = 120
+            const step = weights.length > 1 ? width / (weights.length - 1) : 0
+            return weights.map((value, index) => {
+                const x = weights.length === 1 ? width / 2 : index * step
+                const normalized = (value - min) / range
+                const y = height - (normalized * height)
+                return { x, y }
+            })
+        })
+
+        const chartPath = computed(() => {
+            const points = chartPoints.value
+            if (!points.length) {
+                return ''
+            }
+            return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+        })
+
         return {
             selectedPeriod,
             timePeriods,
@@ -163,7 +243,10 @@ export default {
             goBack,
             previousWeek,
             nextWeek,
-            goToAddRecord
+            goToAddRecord,
+            activeProfileName,
+            chartPoints,
+            chartPath
         }
     }
 }
@@ -187,6 +270,17 @@ export default {
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+.title-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
 }
 
 .back-btn,

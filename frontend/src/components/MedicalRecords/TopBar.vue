@@ -9,9 +9,14 @@
                 @click="handleBack"
                 class="back-button"
             />
-            <div class="title-wrapper">
+            <div v-if="profileName" class="profile-chip main">
+                <div class="profile-avatar">
+                    <mdicon name="account-circle" :size="26"/>
+                </div>
+                <span>{{ profileName }}</span>
+            </div>
+            <div v-else class="title-wrapper">
                 <h2 class="title">{{ title }}</h2>
-                <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
             </div>
         </div>
         <div class="right-section">
@@ -40,6 +45,10 @@ export default {
             default: '/'
         },
         subtitle: {
+            type: String,
+            default: ''
+        },
+        profileName: {
             type: String,
             default: ''
         }
@@ -110,15 +119,36 @@ export default {
     flex-direction: column;
 }
 
-.subtitle {
-    margin: 0;
-    font-size: 13px;
-    color: #6b7280;
-}
-
 .right-section {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #111827;
+}
+
+.profile-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+}
+
+.profile-chip.main {
+    padding: 6px 14px;
+    font-size: 13px;
 }
 </style>

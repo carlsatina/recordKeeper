@@ -3,7 +3,7 @@
     <!-- Top Bar -->
     <TopBar 
         :title="getTabTitle()"
-        :subtitle="activeProfileName"
+        :profile-name="activeProfileName"
         :show-back="activeTab === 'home'"
         back-route="/"
     >
@@ -258,7 +258,7 @@
                     :key="member.id"
                     class="profile-avatar"
                     :class="{ active: member.id === activeMemberId }"
-                    @click="activeMemberId = member.id"
+                    @click="selectProfileMember(member)"
                 >
                     <div class="avatar-circle">
                         <mdicon :name="activeMemberId === member.id ? 'account' : 'account-outline'" :size="28"/>
@@ -316,6 +316,7 @@
     <!-- Bottom Navigation -->
     <BottomNav 
         :active-tab="activeTab"
+        :profile-name="activeProfileName"
         @change-tab="handleTabChange"
     />
 
@@ -342,11 +343,15 @@
         </div>
     </div>
 </div>
+
+<div v-if="showToast" class="toast-notification">
+    {{ toastMessage }}
+</div>
 </template>
 
 <script>
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import TopBar from '@/components/MedicalRecords/TopBar.vue'
 import BottomNav from '@/components/MedicalRecords/BottomNav.vue'
 import { useProfiles } from '@/composables/profiles'
@@ -359,12 +364,16 @@ export default {
     },
     setup() {
         const router = useRouter()
-        const activeTab = ref('home')
+        const route = useRoute()
+        const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'home')
         const showHealthModal = ref(false)
         const selectedCategory = ref('blood-pressure')
+        const showToast = ref(false)
+        const toastMessage = ref('')
 
         const handleTabChange = (tab) => {
             activeTab.value = tab
+            router.replace({ path: '/medical-records', query: { tab } })
         }
 
         const getTabTitle = () => {
@@ -395,16 +404,45 @@ export default {
             showHealthModal.value = false
         }
 
+        const ensureProfileSelected = () => {
+            if (!activeMemberId.value) {
+                alert('Please select a profile first.')
+                return false
+            }
+            return true
+        }
+
         const navigateToBloodPressure = () => {
-            router.push('/medical-records/blood-pressure')
+            if (!ensureProfileSelected()) return
+            router.push({
+                path: '/medical-records/blood-pressure',
+                query: {
+                    profileId: activeMemberId.value,
+                    profileName: activeProfileName.value
+                }
+            })
         }
 
         const navigateToBloodSugar = () => {
-            router.push('/medical-records/blood-sugar')
+            if (!ensureProfileSelected()) return
+            router.push({
+                path: '/medical-records/blood-sugar',
+                query: {
+                    profileId: activeMemberId.value,
+                    profileName: activeProfileName.value
+                }
+            })
         }
 
         const navigateToBodyWeight = () => {
-            router.push('/medical-records/body-weight')
+            if (!ensureProfileSelected()) return
+            router.push({
+                path: '/medical-records/body-weight',
+                query: {
+                    profileId: activeMemberId.value,
+                    profileName: activeProfileName.value
+                }
+            })
         }
 
         // Week days for charts
@@ -441,11 +479,20 @@ export default {
             router.push('/medical-records/profile/add')
         }
 
+        const triggerToast = (message) => {
+            toastMessage.value = message
+            showToast.value = true
+            setTimeout(() => {
+                showToast.value = false
+            }, 2000)
+        }
+
         const selectProfileMember = (member) => {
             activeMemberId.value = member.id
             localStorage.setItem('selectedProfileId', member.id)
             localStorage.setItem('selectedProfileName', member.name)
-            router.push('/')
+            triggerToast(`${member.name} selected`)
+            handleTabChange('home')
         }
 
         const activeProfileName = computed(() => {
@@ -456,14 +503,14 @@ export default {
             return localStorage.getItem('selectedProfileName') || ''
         })
 
-        const { fetchProfiles } = useProfiles()
+        const profilesComposable = useProfiles()
         const loadProfiles = async () => {
             const token = localStorage.getItem('token')
             if (!token) {
                 profileMembers.value = []
                 return
             }
-            const { response, error } = await fetchProfiles(token)
+            const { response, error } = await profilesComposable.fetchProfiles(token)
             if (error.value === null && response.value?.profiles) {
                 profileMembers.value = response.value.profiles.map(profile => ({
                     id: profile.id,
@@ -494,6 +541,17 @@ export default {
                 loadProfiles()
             }
         })
+
+        watch(
+            () => route.query.tab,
+            (val) => {
+                if (typeof val === 'string') {
+                    activeTab.value = val
+                } else if (!val) {
+                    activeTab.value = 'home'
+                }
+            }
+        )
 
         const navigateProfileSection = (section) => {
             console.log('Navigate to', section)
@@ -562,7 +620,9 @@ export default {
             navigateProfileSection,
             selectProfileMember,
             activeProfileName,
-            loadProfiles
+            loadProfiles,
+            showToast,
+            toastMessage
         }
     }
 }
@@ -1303,5 +1363,19 @@ export default {
     font-size: 16px;
     color: #1a1a1a;
     font-weight: 400;
+}
+
+.toast-notification {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    z-index: 1500;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 </style>

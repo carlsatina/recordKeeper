@@ -3,7 +3,8 @@ import { PrismaClient } from '@prisma/client'
 import {
     createBloodPressureRecord,
     createBloodSugarRecord,
-    createBodyWeightRecord
+    createBodyWeightRecord,
+    getBodyWeightRecords
 } from '../controller/vitalsController'
 
 const makeVitalsRouter = (
@@ -15,6 +16,7 @@ const makeVitalsRouter = (
     router.post('/blood-pressure', authenticateUser, createBloodPressureRecord)
     router.post('/blood-sugar', authenticateUser, createBloodSugarRecord)
     router.post('/body-weight', authenticateUser, createBodyWeightRecord)
+    router.get('/body-weight', authenticateUser, getBodyWeightRecords)
 
     return router
 }

@@ -5,7 +5,10 @@
         <button class="back-btn" @click="goBack">
             <mdicon name="arrow-left" :size="24"/>
         </button>
-        <h2 class="page-title">Blood Sugar</h2>
+        <div class="title-block">
+            <h2 class="page-title">Blood Sugar</h2>
+            <p class="profile-subtitle">{{ activeProfileName }}</p>
+        </div>
         <button class="menu-btn">
             <mdicon name="dots-vertical" :size="24"/>
         </button>
@@ -97,15 +100,26 @@
 
 <script>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 export default {
     name: 'BloodSugarDetail',
     setup() {
         const router = useRouter()
+        const route = useRoute()
         const selectedPeriod = ref('Week')
         const timePeriods = ['Day', 'Week', 'Month', 'Year']
         const dateRange = ref('05 Jan - 11 Jan')
+        const profileIdFromQuery = Array.isArray(route.query.profileId) ? route.query.profileId[0] : route.query.profileId
+        const profileNameFromQuery = Array.isArray(route.query.profileName) ? route.query.profileName[0] : route.query.profileName
+        const activeProfileId = profileIdFromQuery || localStorage.getItem('selectedProfileId')
+        const activeProfileName = ref(profileNameFromQuery || localStorage.getItem('selectedProfileName') || 'Profile')
+        if (activeProfileId) {
+            localStorage.setItem('selectedProfileId', activeProfileId)
+        }
+        if (activeProfileName.value) {
+            localStorage.setItem('selectedProfileName', activeProfileName.value)
+        }
         const weekDaysLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
         const bsRecords = ref([
@@ -140,7 +154,7 @@ export default {
         ])
 
         const goBack = () => {
-            router.back()
+            router.push({ path: '/medical-records', query: { tab: 'health' } })
         }
         const goToAddRecord = () => {
             router.push('/medical-records/blood-sugar/add')
@@ -163,7 +177,8 @@ export default {
             goBack,
             previousWeek,
             nextWeek,
-            goToAddRecord
+            goToAddRecord,
+            activeProfileName
         }
     }
 }
@@ -187,6 +202,17 @@ export default {
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+.title-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
 }
 
 .back-btn,

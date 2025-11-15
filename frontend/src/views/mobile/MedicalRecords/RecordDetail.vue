@@ -129,12 +129,16 @@
                     <mdicon name="chevron-left" :size="28"/>
                 </button>
                 <div class="viewer-image-wrapper">
-                    <img 
-                        v-if="currentViewerImage"
-                        :src="resolveFileUrl(currentViewerImage.url)"
-                        :alt="currentViewerImage.originalName || 'Attachment'"
-                        :style="viewerImageStyle"
-                    />
+                                <img 
+                                    v-if="currentViewerImage"
+                                    :src="resolveFileUrl(currentViewerImage.url)"
+                                    :alt="currentViewerImage.originalName || 'Attachment'"
+                                    :style="viewerImageStyle"
+                                    @touchstart.prevent="onTouchStart"
+                                    @touchmove.prevent="onTouchMove"
+                                    @touchend="onTouchEnd"
+                                    @touchcancel="onTouchEnd"
+                                />
                 </div>
                 <button class="viewer-nav" @click="nextImage" :disabled="!hasMultipleImages">
                     <mdicon name="chevron-right" :size="28"/>
@@ -318,6 +322,44 @@ export default {
             viewer.zoom = 1
         }
 
+        const pinchState = reactive({
+            active: false,
+            initialDistance: 0,
+            initialZoom: 1
+        })
+
+        const clampZoom = (value) => Math.min(3, Math.max(1, value))
+
+        const distanceBetweenTouches = (touches) => {
+            if (touches.length < 2) return 0
+            const [touch1, touch2] = [touches[0], touches[1]]
+            const dx = touch2.clientX - touch1.clientX
+            const dy = touch2.clientY - touch1.clientY
+            return Math.hypot(dx, dy)
+        }
+
+        const onTouchStart = (event) => {
+            if (event.touches.length === 2) {
+                pinchState.active = true
+                pinchState.initialDistance = distanceBetweenTouches(event.touches)
+                pinchState.initialZoom = viewer.zoom
+            }
+        }
+
+        const onTouchMove = (event) => {
+            if (!pinchState.active || event.touches.length < 2) return
+            const newDistance = distanceBetweenTouches(event.touches)
+            if (pinchState.initialDistance === 0) return
+            const scale = newDistance / pinchState.initialDistance
+            viewer.zoom = clampZoom(pinchState.initialZoom * scale)
+        }
+
+        const onTouchEnd = () => {
+            if (pinchState.active) {
+                pinchState.active = false
+            }
+        }
+
         const loadRecord = async () => {
             const token = localStorage.getItem('token')
             if (!token) {
@@ -383,7 +425,10 @@ export default {
             menuOpen,
             toggleMenu,
             menuRef,
-            goToEdit
+            goToEdit,
+            onTouchStart,
+            onTouchMove,
+            onTouchEnd
         }
     }
 }

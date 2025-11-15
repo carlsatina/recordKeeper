@@ -85,7 +85,7 @@
 
     <!-- Records List -->
     <div class="records-list">
-        <div class="record-item" v-for="record in bsRecords" :key="record.id">
+        <div class="record-item" v-for="record in bsRecords" :key="record.id" @click="openRecordDetail(record.id)">
             <div class="record-info">
                 <p class="record-date">{{ record.date }}</p>
                 <p class="record-value">{{ record.value }} mg/dL <span class="record-type">({{ record.type }})</span></p>
@@ -146,6 +146,16 @@ export default {
 
         const goBack = () => {
             router.push({ path: '/medical-records', query: { tab: 'health' } })
+        }
+        const openRecordDetail = (recordId) => {
+            if (!recordId) return
+            router.push({
+                path: `/medical-records/blood-sugar/${recordId}`,
+                query: {
+                    profileId: activeProfileId.value,
+                    profileName: activeProfileName.value
+                }
+            })
         }
         const goToAddRecord = () => {
             router.push({
@@ -227,7 +237,8 @@ export default {
             goToAddRecord,
             activeProfileName,
             chartPoints,
-            chartPath
+            chartPath,
+            openRecordDetail
         }
     }
 }

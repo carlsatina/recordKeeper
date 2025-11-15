@@ -48,11 +48,42 @@ export const useBloodSugar = () => {
         return data
     }
 
+    const updateRecord = async(token, recordId, payload) => {
+        const res = await fetch(`${API_BASE_URL}/api/v1/vitals/blood-sugar/${recordId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to update blood sugar record')
+        }
+        return data
+    }
+
+    const fetchRecordById = async(token, recordId) => {
+        const res = await fetch(`${API_BASE_URL}/api/v1/vitals/blood-sugar/${recordId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to fetch blood sugar record')
+        }
+        return data.record
+    }
+
     return {
         records,
         loading,
         error,
         fetchRecords,
-        addRecord
+        addRecord,
+        updateRecord,
+        fetchRecordById
     }
 }

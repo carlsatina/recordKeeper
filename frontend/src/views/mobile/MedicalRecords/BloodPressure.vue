@@ -64,7 +64,7 @@
 
     <!-- Records List -->
     <div class="records-list">
-        <div class="record-item" v-for="record in bpRecords" :key="record.id">
+        <div class="record-item" v-for="record in bpRecords" :key="record.id" @click="openRecordDetail(record.id)">
             <div class="record-info">
                 <p class="record-date">{{ record.date }}</p>
                 <p class="record-value">{{ record.systolic }} systolic/{{ record.diastolic }} diastolic</p>
@@ -156,6 +156,16 @@ export default {
         const goBack = () => {
             router.push({ path: '/medical-records', query: { tab: 'health' } })
         }
+        const openRecordDetail = (recordId) => {
+            if (!recordId) return
+            router.push({
+                path: `/medical-records/blood-pressure/${recordId}`,
+                query: {
+                    profileId: activeProfileId.value,
+                    profileName: activeProfileName.value
+                }
+            })
+        }
         const goToAddRecord = () => {
             router.push({
                 path: '/medical-records/blood-pressure/add',
@@ -214,7 +224,8 @@ export default {
             previousWeek,
             nextWeek,
             goToAddRecord,
-            activeProfileName
+            activeProfileName,
+            openRecordDetail
         }
     }
 }

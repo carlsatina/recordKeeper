@@ -40,6 +40,22 @@
         </div>
     </div>
 
+    <div class="card notes-card">
+        <div class="card-header">
+            <div>
+                <p class="card-title">Notes</p>
+                <p class="card-subtitle">Optional</p>
+            </div>
+            <mdicon name="note-text-outline" :size="22" class="card-icon"/>
+        </div>
+        <textarea
+            class="notes-textarea"
+            rows="4"
+            placeholder="Add any context for this reading"
+            v-model="notes"
+        ></textarea>
+    </div>
+
     <div class="card datetime-card">
         <div class="card-header">
             <div>
@@ -81,6 +97,7 @@ export default {
         const context = ref('fasting')
         const readingDate = ref(new Date().toISOString().slice(0, 10))
         const readingTime = ref(new Date().toISOString().slice(11, 16))
+        const notes = ref('')
         const saving = ref(false)
         const profileIdFromQuery = Array.isArray(route.query.profileId) ? route.query.profileId[0] : route.query.profileId
         const profileNameFromQuery = Array.isArray(route.query.profileName) ? route.query.profileName[0] : route.query.profileName
@@ -111,6 +128,7 @@ export default {
                         profileId: activeProfileId,
                         reading: reading.value,
                         context: context.value,
+                        notes: notes.value,
                         recordedAt: `${readingDate.value}T${readingTime.value}:00`
                     })
                 })
@@ -135,6 +153,7 @@ export default {
             context,
             readingDate,
             readingTime,
+            notes,
             saveRecord,
             activeProfileName,
             saving
@@ -209,6 +228,16 @@ export default {
 
 .card-icon {
     color: #667eea;
+}
+
+.notes-textarea {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    min-height: 120px;
+    font-size: 14px;
+    resize: vertical;
 }
 
 .sugar-inputs {

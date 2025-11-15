@@ -42,6 +42,22 @@
         </div>
     </div>
 
+    <div class="card notes-card">
+        <div class="card-header">
+            <div>
+                <p class="card-title">Notes</p>
+                <p class="card-subtitle">Optional</p>
+            </div>
+            <mdicon name="note-text-outline" :size="22" class="card-icon"/>
+        </div>
+        <textarea
+            class="notes-textarea"
+            rows="4"
+            placeholder="Add any context or observations"
+            v-model="notes"
+        ></textarea>
+    </div>
+
     <div class="card datetime-card">
         <div class="card-header">
             <div>
@@ -82,6 +98,7 @@ export default {
         const diastolic = ref('')
         const readingDate = ref(new Date().toISOString().slice(0, 10))
         const readingTime = ref(new Date().toISOString().slice(11, 16))
+        const notes = ref('')
         const saving = ref(false)
         const activeProfileId = localStorage.getItem('selectedProfileId')
         const activeProfileName = ref(localStorage.getItem('selectedProfileName') || 'Profile')
@@ -104,6 +121,7 @@ export default {
                         profileId: activeProfileId,
                         systolic: systolic.value,
                         diastolic: diastolic.value,
+                        notes: notes.value,
                         recordedAt: `${readingDate.value}T${readingTime.value}:00`
                     })
                 })
@@ -119,6 +137,7 @@ export default {
             diastolic,
             readingDate,
             readingTime,
+            notes,
             saveRecord,
             activeProfileName,
             saving
@@ -193,6 +212,16 @@ export default {
 
 .card-icon {
     color: #667eea;
+}
+
+.notes-card textarea {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    min-height: 120px;
+    font-size: 14px;
+    resize: vertical;
 }
 
 .bp-inputs {

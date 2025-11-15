@@ -29,6 +29,17 @@ const ensureUser = (req: ExtendedRequest, res: any) => {
     return req.user
 }
 
+const findEntryForUser = async(userId: string, entryId: string) => {
+    return prisma.vitalEntry.findFirst({
+        where: {
+            id: entryId,
+            profile: {
+                userId
+            }
+        }
+    })
+}
+
 const createBloodPressureRecord = async (req: ExtendedRequest, res: any) => {
     const user = ensureUser(req, res)
     if (!user) return
@@ -261,11 +272,221 @@ const getBodyWeightRecords = async (req: ExtendedRequest, res: any) => {
     })
 }
 
+const getBloodPressureRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const entry = await findEntryForUser(user.id, entryId)
+    if (!entry || entry.vitalType !== VitalType.BLOOD_PRESSURE_SYSTOLIC) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Blood pressure record not found.'
+        })
+    }
+
+    res.status(200).json({
+        status: 200,
+        record: entry
+    })
+}
+
+const getBloodSugarRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const entry = await findEntryForUser(user.id, entryId)
+    if (!entry || entry.vitalType !== VitalType.BLOOD_GLUCOSE) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Blood sugar record not found.'
+        })
+    }
+
+    res.status(200).json({
+        status: 200,
+        record: entry
+    })
+}
+
+const getBodyWeightRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const entry = await findEntryForUser(user.id, entryId)
+    if (!entry || entry.vitalType !== VitalType.WEIGHT) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Body weight record not found.'
+        })
+    }
+
+    res.status(200).json({
+        status: 200,
+        record: entry
+    })
+}
+
+const updateBloodPressureRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const existing = await findEntryForUser(user.id, entryId)
+    if (!existing || existing.vitalType !== VitalType.BLOOD_PRESSURE_SYSTOLIC) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Blood pressure record not found.'
+        })
+    }
+
+    const {
+        systolic,
+        diastolic,
+        recordedAt,
+        notes
+    } = req.body
+
+    const updateData: any = {}
+    if (typeof systolic !== 'undefined') {
+        const value = Number(systolic)
+        if (Number.isNaN(value)) {
+            return res.status(400).json({ status: 400, message: 'Systolic must be a number.' })
+        }
+        updateData.systolic = value
+    }
+    if (typeof diastolic !== 'undefined') {
+        const value = Number(diastolic)
+        if (Number.isNaN(value)) {
+            return res.status(400).json({ status: 400, message: 'Diastolic must be a number.' })
+        }
+        updateData.diastolic = value
+    }
+    if (typeof notes !== 'undefined') {
+        updateData.notes = notes
+    }
+    if (recordedAt) {
+        updateData.recordedAt = new Date(recordedAt)
+    }
+
+    const updated = await prisma.vitalEntry.update({
+        where: { id: entryId },
+        data: updateData
+    })
+
+    return res.status(200).json({
+        status: 200,
+        record: updated
+    })
+}
+
+const updateBloodSugarRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const existing = await findEntryForUser(user.id, entryId)
+    if (!existing || existing.vitalType !== VitalType.BLOOD_GLUCOSE) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Blood sugar record not found.'
+        })
+    }
+
+    const {
+        reading,
+        context,
+        recordedAt,
+        notes
+    } = req.body
+
+    const updateData: any = {}
+    if (typeof reading !== 'undefined') {
+        const value = Number(reading)
+        if (Number.isNaN(value)) {
+            return res.status(400).json({ status: 400, message: 'Reading must be a number.' })
+        }
+        updateData.valueNumber = value
+    }
+    if (typeof context !== 'undefined') {
+        updateData.chartGroup = context
+    }
+    if (typeof notes !== 'undefined') {
+        updateData.notes = notes
+    }
+    if (recordedAt) {
+        updateData.recordedAt = new Date(recordedAt)
+    }
+
+    const updated = await prisma.vitalEntry.update({
+        where: { id: entryId },
+        data: updateData
+    })
+
+    return res.status(200).json({
+        status: 200,
+        record: updated
+    })
+}
+
+const updateBodyWeightRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const existing = await findEntryForUser(user.id, entryId)
+    if (!existing || existing.vitalType !== VitalType.WEIGHT) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Body weight record not found.'
+        })
+    }
+
+    const {
+        weight,
+        recordedAt,
+        notes
+    } = req.body
+
+    const updateData: any = {}
+    if (typeof weight !== 'undefined') {
+        const value = Number(weight)
+        if (Number.isNaN(value)) {
+            return res.status(400).json({ status: 400, message: 'Weight must be a number.' })
+        }
+        updateData.valueNumber = value
+    }
+    if (typeof notes !== 'undefined') {
+        updateData.notes = notes
+    }
+    if (recordedAt) {
+        updateData.recordedAt = new Date(recordedAt)
+    }
+
+    const updated = await prisma.vitalEntry.update({
+        where: { id: entryId },
+        data: updateData
+    })
+
+    return res.status(200).json({
+        status: 200,
+        record: updated
+    })
+}
+
 export {
     createBloodPressureRecord,
     createBloodSugarRecord,
     createBodyWeightRecord,
     getBodyWeightRecords,
     getBloodPressureRecords,
-    getBloodSugarRecords
+    getBloodSugarRecords,
+    getBloodPressureRecord,
+    getBloodSugarRecord,
+    getBodyWeightRecord,
+    updateBloodPressureRecord,
+    updateBloodSugarRecord,
+    updateBodyWeightRecord
 }

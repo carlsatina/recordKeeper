@@ -9,8 +9,11 @@ import Register from '@/views/LandingPage/Register.vue'
 import MedicalRecords from '@/views/LandingPage/MedicalRecords.vue'
 import AddRecord from '@/views/LandingPage/MedicalRecords/AddRecord.vue'
 import BloodPressure from '@/views/mobile/MedicalRecords/BloodPressure.vue'
+import BloodPressureEntry from '@/views/mobile/MedicalRecords/BloodPressureEntry.vue'
 import BloodSugar from '@/views/mobile/MedicalRecords/BloodSugar.vue'
+import BloodSugarEntry from '@/views/mobile/MedicalRecords/BloodSugarEntry.vue'
 import BodyWeight from '@/views/mobile/MedicalRecords/BodyWeight.vue'
+import BodyWeightEntry from '@/views/mobile/MedicalRecords/BodyWeightEntry.vue'
 import AddBloodPressureRecord from '@/views/mobile/MedicalRecords/AddBloodPressureRecord.vue'
 import AddBloodSugarRecord from '@/views/mobile/MedicalRecords/AddBloodSugarRecord.vue'
 import AddBodyWeightRecord from '@/views/mobile/MedicalRecords/AddBodyWeightRecord.vue'
@@ -68,6 +71,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medical-records/blood-pressure/:id',
+    name: 'blood-pressure-entry',
+    component: BloodPressureEntry,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/medical-records/blood-pressure/add',
     name: 'blood-pressure-add',
     component: AddBloodPressureRecord,
@@ -80,6 +89,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medical-records/blood-sugar/:id',
+    name: 'blood-sugar-entry',
+    component: BloodSugarEntry,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/medical-records/blood-sugar/add',
     name: 'blood-sugar-add',
     component: AddBloodSugarRecord,
@@ -89,6 +104,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/body-weight',
     name: 'body-weight',
     component: BodyWeight,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/body-weight/:id',
+    name: 'body-weight-entry',
+    component: BodyWeightEntry,
     meta: { requiresAuth: true }
   },
   {

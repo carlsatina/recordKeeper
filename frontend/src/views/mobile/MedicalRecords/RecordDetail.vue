@@ -4,7 +4,21 @@
         :title="record?.title || 'Record Detail'"
         :show-back="true"
         :back-route="backRoute"
-    />
+    >
+        <template #actions>
+            <div class="menu-wrapper" v-if="record" ref="menuRef">
+                <button class="menu-button" type="button" @click.stop="toggleMenu">
+                    <mdicon name="menu" :size="20"/>
+                </button>
+                <div v-if="menuOpen" class="menu-dropdown">
+                    <button class="menu-item" @click="goToEdit">
+                        <mdicon name="pencil" :size="18"/>
+                        <span>Edit</span>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </TopBar>
 
     <div class="record-detail-content">
         <div v-if="loading" class="state-card">
@@ -42,14 +56,15 @@
                 </div>
             </section>
 
-            <section class="notes-card" v-if="record.notes">
+            <section class="notes-card">
                 <h3>Notes</h3>
-                <p>{{ record.notes }}</p>
+                <p v-if="record.notes">{{ record.notes }}</p>
+                <p v-else class="empty-hint">No notes for this record.</p>
             </section>
 
-            <section class="tags-card" v-if="recordTags.length">
+            <section class="tags-card">
                 <h3>Tags</h3>
-                <div class="tag-chips">
+                <div v-if="recordTags.length" class="tag-chips">
                     <span 
                         class="tag-chip" 
                         v-for="tag in recordTags" 
@@ -58,6 +73,7 @@
                         {{ tag }}
                     </span>
                 </div>
+                <p v-else class="empty-hint">No tags added.</p>
             </section>
 
             <section class="attachments-card" v-if="imageFiles.length || otherFiles.length">
@@ -140,7 +156,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch, reactive } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TopBar from '@/components/MedicalRecords/TopBar.vue'
 import { useMedicalRecords } from '@/composables/medicalRecords'
@@ -173,12 +189,36 @@ export default {
             index: 0,
             zoom: 1
         })
+        const menuOpen = ref(false)
+        const menuRef = ref(null)
 
         const recordId = computed(() => route.params.id)
         const backRoute = computed(() => {
             const from = route.query.from
             return typeof from === 'string' && from.length ? from : '/medical-records'
         })
+
+        const toggleMenu = () => {
+            menuOpen.value = !menuOpen.value
+        }
+
+        const handleClickOutside = (event) => {
+            if (!menuOpen.value) return
+            if (menuRef.value && !menuRef.value.contains(event.target)) {
+                menuOpen.value = false
+            }
+        }
+
+        const goToEdit = () => {
+            if (!record.value) return
+            menuOpen.value = false
+            router.push({
+                path: '/medical-records/add-record',
+                query: {
+                    recordId: record.value.id
+                }
+            })
+        }
 
         const resolvedProfileName = computed(() => {
             if (record.value?.profile?.displayName) {
@@ -311,6 +351,11 @@ export default {
                 return
             }
             loadRecord()
+            document.addEventListener('click', handleClickOutside)
+        })
+
+        onBeforeUnmount(() => {
+            document.removeEventListener('click', handleClickOutside)
         })
 
         return {
@@ -334,7 +379,11 @@ export default {
             formatFileSize,
             backRoute,
             resolvedProfileName,
-            recordTags
+            recordTags,
+            menuOpen,
+            toggleMenu,
+            menuRef,
+            goToEdit
         }
     }
 }
@@ -422,7 +471,8 @@ export default {
 }
 
 .notes-card h3,
-.attachments-card h3 {
+.attachments-card h3,
+.tags-card h3 {
     margin: 0 0 12px 0;
     font-size: 16px;
     font-weight: 600;
@@ -433,6 +483,26 @@ export default {
     margin: 0;
     color: #4b5563;
     line-height: 1.5;
+}
+
+.tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4f46e5;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.empty-hint {
+    color: #9ca3af;
+    font-size: 13px;
 }
 
 .image-grid {
@@ -594,25 +664,50 @@ export default {
 .viewer-controls input[type="range"] {
     flex: 1;
 }
-</style>
-.tags-card h3 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
+
+.menu-wrapper {
+    position: relative;
 }
 
-.tag-chips {
+.menu-button {
+    border: none;
+    background: transparent;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #374151;
+}
+
+.menu-button:active {
+    background: #f3f4f6;
+}
+
+.menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 6px 0;
+    z-index: 20;
+    min-width: 150px;
+}
+
+.menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #1f2937;
+    cursor: pointer;
 }
 
-.tag-chip {
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
-    font-size: 13px;
-    font-weight: 500;
+.menu-item:active {
+    background: #f3f4f6;
 }
+</style>

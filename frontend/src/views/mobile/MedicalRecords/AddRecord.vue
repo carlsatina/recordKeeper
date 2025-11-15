@@ -5,13 +5,27 @@
         <button class="close-btn" @click="goBack">
             <mdicon name="close" :size="24"/>
         </button>
-        <h2 class="page-title">Add Record</h2>
+        <h2 class="page-title">{{ headerTitle }}</h2>
     </div>
 
     <!-- Content -->
     <div class="content">
         <!-- Image Upload Section -->
         <div class="image-upload-section">
+            <div 
+                class="image-preview existing" 
+                v-for="file in existingFiles" 
+                :key="`existing-${file.id}`"
+            >
+                <img :src="resolveFileUrl(file.url)" :alt="file.originalName || 'Attachment'"/>
+                <button 
+                    type="button" 
+                    class="remove-image-btn"
+                    @click="removeExistingFile(file.id)"
+                >
+                    <mdicon name="close" :size="16"/>
+                </button>
+            </div>
             <div 
                 class="image-preview" 
                 v-for="(file, index) in selectedFiles" 
@@ -159,26 +173,31 @@
 
         <!-- Save Button -->
         <button class="save-btn" @click="saveRecord" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save record' }}
+            {{ saving ? 'Saving...' : (isEditing ? 'Update record' : 'Save record') }}
         </button>
     </div>
 </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useProfiles } from '@/composables/profiles'
 import { useMedicalRecords } from '@/composables/medicalRecords'
+import { API_BASE_URL } from '@/constants/config'
 
 export default {
     name: 'AddRecordMobile',
     setup() {
         const router = useRouter()
+        const route = useRoute()
+        const getDefaultProfileId = () => localStorage.getItem('selectedProfileId') || ''
+
         const deviceInput = ref(null)
         const cameraInput = ref(null)
         const selectedFiles = ref([])
-        const recordFor = ref(localStorage.getItem('selectedProfileId') || '')
+        const existingFiles = ref([])
+        const recordFor = ref(getDefaultProfileId())
         const fileName = ref('')
         const recordDate = ref(new Date().toISOString().split('T')[0])
         const recordType = ref('LAB_RESULT')
@@ -186,8 +205,10 @@ export default {
         const tagsInput = ref('')
         const notes = ref('')
         const profileMembers = ref([])
+        const filesToRemove = ref([])
+        const recordId = ref(typeof route.query.recordId === 'string' ? route.query.recordId : null)
         const { fetchProfiles } = useProfiles()
-        const { createRecord } = useMedicalRecords()
+        const { createRecord, fetchRecordById, updateRecord } = useMedicalRecords()
         const maxAttachments = 5
         const saving = ref(false)
         const formError = ref('')
@@ -196,6 +217,9 @@ export default {
             { id: 'PRESCRIPTION', label: 'Prescription', icon: 'file-document-edit' },
             { id: 'OTHER', label: 'Invoice', icon: 'receipt' }
         ]
+
+        const isEditing = computed(() => !!recordId.value)
+        const headerTitle = computed(() => (isEditing.value ? 'Edit Record' : 'Add Record'))
 
         const goBack = () => {
             router.back()
@@ -243,6 +267,61 @@ export default {
             selectedFiles.value.splice(index, 1)
         }
 
+        const resolveFileUrl = (url) => {
+            if (!url) return ''
+            if (url.startsWith('http')) {
+                return url
+            }
+            return `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`
+        }
+
+        const removeExistingFile = (fileId) => {
+            existingFiles.value = existingFiles.value.filter(file => file.id !== fileId)
+            if (!filesToRemove.value.includes(fileId)) {
+                filesToRemove.value.push(fileId)
+            }
+        }
+
+        const loadRecordDetails = async () => {
+            if (!recordId.value) return
+            const token = localStorage.getItem('token')
+            if (!token) return
+            try {
+                const record = await fetchRecordById(token, recordId.value)
+                recordFor.value = record.profileId
+                fileName.value = record.title
+                providerName.value = record.providerName || ''
+                recordDate.value = new Date(record.recordDate).toISOString().split('T')[0]
+                recordType.value = record.recordType || 'OTHER'
+                notes.value = record.notes || ''
+                tagsInput.value = Array.isArray(record.tags) ? record.tags.join(', ') : ''
+                existingFiles.value = (record.files || []).filter(file => (file.mimeType || '').startsWith('image/')).map(file => ({
+                    id: file.id,
+                    url: file.url,
+                    mimeType: file.mimeType,
+                    originalName: file.originalName
+                }))
+                filesToRemove.value = []
+                selectedFiles.value = []
+            } catch (err) {
+                formError.value = err.message || 'Unable to load record details.'
+            }
+        }
+
+        const resetForm = () => {
+            recordFor.value = getDefaultProfileId()
+            fileName.value = ''
+            providerName.value = ''
+            recordDate.value = new Date().toISOString().split('T')[0]
+            recordType.value = 'LAB_RESULT'
+            tagsInput.value = ''
+            notes.value = ''
+            selectedFiles.value = []
+            existingFiles.value = []
+            filesToRemove.value = []
+            formError.value = ''
+        }
+
         const saveRecord = async() => {
             formError.value = ''
             if (!recordFor.value) {
@@ -282,11 +361,19 @@ export default {
                 ? tagsInput.value.split(',').map(tag => tag.trim()).filter(Boolean)
                 : []
             formData.append('tags', JSON.stringify(tagsArray))
+            if (isEditing.value) {
+                formData.append('filesToRemove', JSON.stringify(filesToRemove.value))
+            }
 
             try {
                 saving.value = true
-                await createRecord(token, formData)
-                router.replace({ path: '/medical-records', query: { tab: 'records' } })
+                if (isEditing.value && recordId.value) {
+                    await updateRecord(token, recordId.value, formData)
+                    router.replace({ path: `/medical-records/records/${recordId.value}` })
+                } else {
+                    await createRecord(token, formData)
+                    router.replace({ path: '/medical-records', query: { tab: 'records' } })
+                }
             } catch (err) {
                 formError.value = err.message || 'Unable to save record. Please try again.'
             } finally {
@@ -314,13 +401,28 @@ export default {
         }
 
         onMounted(() => {
-            loadProfiles()
+            loadProfiles().then(() => {
+                loadRecordDetails()
+            })
         })
+
+        watch(
+            () => route.query.recordId,
+            (val) => {
+                recordId.value = typeof val === 'string' ? val : null
+                if (recordId.value) {
+                    loadRecordDetails()
+                } else {
+                    resetForm()
+                }
+            }
+        )
 
         return {
             deviceInput,
             cameraInput,
             selectedFiles,
+            existingFiles,
             maxAttachments,
             recordFor,
             fileName,
@@ -330,14 +432,18 @@ export default {
             tagsInput,
             notes,
             recordTypeOptions,
+            isEditing,
+            headerTitle,
             goBack,
             triggerFileUpload,
             handleFileUpload,
             removeSelectedFile,
+            removeExistingFile,
             saveRecord,
             profileMembers,
             saving,
-            formError
+            formError,
+            resolveFileUrl
         }
     }
 }

@@ -64,6 +64,27 @@ const parseTagsInput = (value: unknown): string[] | null => {
     return []
 }
 
+const parseIdsInput = (value: unknown): string[] => {
+    if (typeof value === 'undefined' || value === null) return []
+    if (Array.isArray(value)) {
+        return value.map(id => String(id)).filter(Boolean)
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (!trimmed.length) return []
+        try {
+            const parsed = JSON.parse(trimmed)
+            if (Array.isArray(parsed)) {
+                return parsed.map(id => String(id)).filter(Boolean)
+            }
+        } catch {
+            // ignore and treat as comma separated
+        }
+        return trimmed.split(',').map(id => id.trim()).filter(Boolean)
+    }
+    return []
+}
+
 const listMedicalRecords = async (req: ExtendedRequest, res: any) => {
     const user = ensureUser(req, res)
     if (!user) return
@@ -233,10 +254,12 @@ const updateMedicalRecord = async (req: ExtendedRequest, res: any) => {
         recordDate,
         providerName,
         notes,
-        tags
+        tags,
+        filesToRemove
     } = req.body
     const files = (req.files as Express.Multer.File[]) || []
     const parsedTags = parseTagsInput(tags)
+    const filesMarkedForRemoval = parseIdsInput(filesToRemove)
 
     const updated = await prisma.medicalRecord.update({
         where: { id: recordId },
@@ -250,6 +273,31 @@ const updateMedicalRecord = async (req: ExtendedRequest, res: any) => {
         },
         include: { files: true }
     })
+
+    if (filesMarkedForRemoval.length) {
+        const removableFiles = await prisma.fileAsset.findMany({
+            where: {
+                id: { in: filesMarkedForRemoval },
+                recordId
+            }
+        })
+
+        if (removableFiles.length) {
+            await prisma.fileAsset.deleteMany({
+                where: {
+                    id: { in: removableFiles.map(file => file.id) },
+                    recordId
+                }
+            })
+
+            removableFiles.forEach(file => {
+                const filePath = resolveDiskPathForFile(file.url)
+                fs.unlink(filePath, () => {
+                    // ignore errors
+                })
+            })
+        }
+    }
 
     if (files.length) {
         const fileData = files.map(file => ({

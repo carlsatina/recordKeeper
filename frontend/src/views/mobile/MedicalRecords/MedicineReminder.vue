@@ -76,13 +76,17 @@
                     v-for="reminder in formattedReminders"
                     :key="reminder.id"
                 >
-                    <div class="pill-icon">
-                        <mdicon name="pill" :size="22"/>
-                    </div>
-                    <div class="reminder-info">
-                        <p class="reminder-name">{{ reminder.title }}</p>
-                        <p class="reminder-details">{{ reminder.subtitle }}</p>
-                        <p class="reminder-start">Start: {{ reminder.startDate }}</p>
+                    <div class="reminder-header">
+                        <div class="reminder-info">
+                            <p class="reminder-name">{{ reminder.title }}</p>
+                            <p class="reminder-details">{{ reminder.subtitle }}</p>
+                        </div>
+                        <div class="reminder-meta">
+                            <span class="reminder-start">{{ reminder.startDate }}</span>
+                            <button class="edit-btn" type="button" @click.stop="openEdit(reminder.id)">
+                                <mdicon name="pencil" :size="18"/>
+                            </button>
+                        </div>
                     </div>
                     <div class="reminder-slots">
                         <button 
@@ -93,7 +97,9 @@
                             @click.stop="toggleReminderSlot(reminder, slot)"
                         >
                             <span class="slot-time">{{ slot.label }}</span>
-                            <span class="slot-status" v-if="slot.status">{{ slot.status }}</span>
+                            <span class="slot-icon" v-if="slot.status">
+                                {{ slot.status === 'taken' ? '☑︎' : '✖︎' }}
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -145,6 +151,9 @@ export default {
         const goBack = () => router.back()
         const addReminder = () => {
             router.push('/medical-records/medicine-reminders/add')
+        }
+        const openEdit = (reminderId) => {
+            router.push(`/medical-records/medicine-reminders/${reminderId}/edit`)
         }
         const goToProfileTab = () => {
             router.push({
@@ -358,6 +367,7 @@ export default {
             remindersLoading,
             formattedReminders,
             toggleReminderSlot,
+            openEdit,
             showMonthPicker,
             toggleMonthPicker,
             monthOptions,
@@ -561,24 +571,33 @@ export default {
     border-radius: 20px;
     padding: 16px;
     display: flex;
-    align-items: center;
-    gap: 14px;
+    flex-direction: column;
+    gap: 12px;
     box-shadow: 0 12px 24px rgba(17, 24, 39, 0.08);
 }
 
-.pill-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: #eef2ff;
-    color: #4f46e5;
+.reminder-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 12px;
 }
 
 .reminder-info {
     flex: 1;
+}
+
+.reminder-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.edit-btn {
+    border: none;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    padding: 4px;
+    color: #4f46e5;
 }
 
 .reminder-name {
@@ -595,7 +614,7 @@ export default {
 }
 
 .reminder-start {
-    margin: 4px 0 0;
+    margin: 0;
     color: #9ca3af;
     font-size: 12px;
 }
@@ -604,19 +623,19 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 12px;
 }
 
 .slot-pill {
     border: none;
     background: rgba(79, 70, 229, 0.08);
     color: #4f46e5;
-    padding: 8px 14px;
-    border-radius: 999px;
+    padding: 6px 12px;
+    border-radius: 12px;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 13px;
 }
 
 .slot-pill.checked {
@@ -628,6 +647,10 @@ export default {
 .slot-status {
     font-size: 12px;
     text-transform: capitalize;
+}
+
+.slot-icon {
+    font-size: 16px;
 }
 
 .empty-state {

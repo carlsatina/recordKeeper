@@ -2,6 +2,7 @@ import { RequestHandler, Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import {
     listMedicineReminders,
+    getMedicineReminder,
     createMedicineReminder,
     updateMedicineReminder,
     deleteMedicineReminder,
@@ -15,6 +16,7 @@ const makeMedicineReminderRouter = (
     const router = Router()
 
     router.get('/', authenticateUser, listMedicineReminders)
+    router.get('/:id', authenticateUser, getMedicineReminder)
     router.post('/', authenticateUser, createMedicineReminder)
     router.put('/:id', authenticateUser, updateMedicineReminder)
     router.post('/:id/logs', authenticateUser, setMedicineReminderStatus)

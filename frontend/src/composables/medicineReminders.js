@@ -83,6 +83,19 @@ export const useMedicineReminders = () => {
         return data.reminder
     }
 
+    const fetchReminderById = async(token, reminderId) => {
+        const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders/${reminderId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to fetch reminder')
+        }
+        return data.reminder
+    }
+
     const deleteReminder = async(token, reminderId) => {
         const res = await fetch(`${API_BASE_URL}/api/v1/medicine-reminders/${reminderId}`, {
             method: 'DELETE',
@@ -125,6 +138,7 @@ export const useMedicineReminders = () => {
         createReminder,
         updateReminder,
         deleteReminder,
-        setReminderStatus
+        setReminderStatus,
+        fetchReminderById
     }
 }

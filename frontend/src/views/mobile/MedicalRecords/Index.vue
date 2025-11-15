@@ -66,16 +66,27 @@
                         class="reminder-item"
                         v-for="reminder in todaysReminders"
                         :key="reminder.id"
-                        @click="toggleHomeReminder(reminder)"
                     >
-                        <div class="reminder-checkbox" :class="{ checked: reminder.status === 'taken' }"></div>
                         <div class="reminder-content">
                             <h4 class="reminder-name">{{ reminder.medicineName }}</h4>
                             <p class="reminder-details">
                                 {{ formatDosage(reminder) }} · {{ reminder.intakeMethod || 'Anytime' }}
                             </p>
+                            <div class="reminder-slot-list">
+                                <button 
+                                    class="reminder-slot-pill"
+                                    v-for="slot in reminder.slots"
+                                    :key="slot.id"
+                                    :class="{ checked: slot.status === 'taken' }"
+                                    @click.stop="toggleHomeReminder(reminder, slot)"
+                                >
+                                    <span>{{ slot.label }}</span>
+                                    <span class="slot-icon" v-if="slot.status">
+                                        {{ slot.status === 'taken' ? '☑︎' : '✖︎' }}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
-                        <span class="reminder-time">{{ reminder.label }}</span>
                     </div>
                     <div 
                         v-if="!todaysReminders.length" 
@@ -692,28 +703,34 @@ export default {
         }
 
         const todaysReminders = computed(() => {
-            const slots = []
-            medicineReminders.value.forEach((reminder) => {
+            const remindersList = medicineReminders.value.map((reminder) => {
                 const reminderSlots = reminder.slots && reminder.slots.length
                     ? reminder.slots
                     : [{ time: reminder.time, status: reminder.status }]
-                reminderSlots.forEach((slot) => {
-                    const rawTime = typeof slot === 'string' ? slot : slot.time
-                    if (!rawTime) return
-                    slots.push({
-                        id: `${reminder.id}-${rawTime}`,
-                        reminderId: reminder.id,
-                        medicineName: reminder.medicineName,
-                        intakeMethod: reminder.intakeMethod,
-                        dosage: reminder.dosage,
-                        unit: reminder.unit,
-                        rawTime,
-                        status: slot.status || null,
-                        label: formatReminderTime(rawTime)
+                const slots = reminderSlots
+                    .map((slot, index) => {
+                        const rawTime = typeof slot === 'string' ? slot : slot.time
+                        if (!rawTime) return null
+                        return {
+                            id: `${reminder.id}-${rawTime}-${index}`,
+                            reminderId: reminder.id,
+                            rawTime,
+                            status: slot.status || null,
+                            label: formatReminderTime(rawTime)
+                        }
                     })
-                })
+                    .filter(Boolean)
+                    .slice(0, 3)
+                return {
+                    id: reminder.id,
+                    medicineName: reminder.medicineName,
+                    intakeMethod: reminder.intakeMethod,
+                    dosage: reminder.dosage,
+                    unit: reminder.unit,
+                    slots
+                }
             })
-            return slots.sort((a, b) => a.rawTime.localeCompare(b.rawTime)).slice(0, 3)
+            return remindersList.slice(0, 3)
         })
 
         const formatDosage = (reminder) => {
@@ -722,7 +739,7 @@ export default {
             return [dosage, unit].filter(Boolean).join(' ')
         }
 
-        const toggleHomeReminder = async(reminderSlot) => {
+        const toggleHomeReminder = async(reminder, reminderSlot) => {
             const token = localStorage.getItem('token')
             if (!token) return
             const newStatus = reminderSlot.status === 'taken' ? 'pending' : 'taken'
@@ -1101,10 +1118,7 @@ export default {
 }
 
 .reminder-item {
-    display: flex;
-    align-items: center;
     padding: 16px 12px;
-    gap: 12px;
     border-bottom: 1px solid #f3f4f6;
 }
 
@@ -1112,28 +1126,10 @@ export default {
     border-bottom: none;
 }
 
-.reminder-checkbox {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #d1d5db;
-    border-radius: 50%;
-    flex-shrink: 0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.reminder-checkbox.checked {
-    border-color: #4ade80;
-    background: #4ade80;
-    box-shadow: inset 0 0 0 4px white;
-}
-
-.reminder-checkbox:active {
-    transform: scale(0.9);
-}
-
 .reminder-content {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .reminder-name {
@@ -1149,11 +1145,32 @@ export default {
     margin: 0;
 }
 
-.reminder-time {
+.reminder-slot-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.reminder-slot-pill {
+    border: none;
+    background: rgba(124, 58, 237, 0.12);
+    color: #5b21b6;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reminder-slot-pill.checked {
+    background: #5b21b6;
+    color: white;
+}
+
+.reminder-slot-pill .slot-icon {
     font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    flex-shrink: 0;
 }
 
 /* Records List */

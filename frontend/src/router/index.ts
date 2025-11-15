@@ -104,6 +104,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medical-records/medicine-reminders/:id/edit',
+    name: 'medicine-reminders-edit',
+    component: AddMedicineReminder,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/medical-records/blood-sugar',
     name: 'blood-sugar',
     component: BloodSugar,

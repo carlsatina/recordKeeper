@@ -235,6 +235,35 @@ const listMedicineReminders = async(req: ExtendedRequest, res: any) => {
     })
 }
 
+const getMedicineReminder = async(req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const reminderId = req.params.id
+    if (!reminderId) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Reminder id is required.'
+        })
+    }
+
+    const reminder = await ensureReminderForUser(user.id, reminderId)
+    if (!reminder) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Reminder not found.'
+        })
+    }
+
+    res.status(200).json({
+        status: 200,
+        reminder: {
+            ...reminder,
+            startDate: reminder.medication?.startDate || reminder.createdAt
+        }
+    })
+}
+
 const createMedicineReminder = async(req: ExtendedRequest, res: any) => {
     const user = ensureUser(req, res)
     if (!user) return
@@ -519,6 +548,7 @@ const setMedicineReminderStatus = async(req: ExtendedRequest, res: any) => {
 
 export {
     listMedicineReminders,
+    getMedicineReminder,
     createMedicineReminder,
     updateMedicineReminder,
     deleteMedicineReminder,

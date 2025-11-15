@@ -4,7 +4,7 @@
         <button class="icon-btn" @click="goBack">
             <mdicon name="arrow-left" :size="22"/>
         </button>
-        <h2 class="title">Add medicine</h2>
+        <h2 class="title">{{ headerTitle }}</h2>
         <div class="spacer"></div>
     </header>
 
@@ -119,22 +119,24 @@
             </div>
         </section>
 
-        <button class="primary-btn" @click="saveReminder">
-            Save
+        <button class="primary-btn" :disabled="saving" @click="saveReminder">
+            {{ saving ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update reminder' : 'Save') }}
         </button>
     </div>
 </div>
 </template>
 
 <script>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useMedicineReminders } from '@/composables/medicineReminders'
 
 export default {
     name: 'AddMedicineReminder',
     setup() {
         const router = useRouter()
+        const route = useRoute()
+        const reminderId = computed(() => route.params.id || route.query.reminderId || null)
         const medicineName = ref('')
         const unit = ref('Tablet')
         const dosage = ref(1)
@@ -150,7 +152,11 @@ export default {
         const durationOptions = ['3 days', '5 days', '7 days', '14 days', '30 days']
         const intakeOptions = ['Before meal', 'After meal']
 
-        const { createReminder } = useMedicineReminders()
+        const saving = ref(false)
+        const initializing = ref(false)
+        const isEditing = computed(() => Boolean(reminderId.value))
+        const headerTitle = computed(() => (isEditing.value ? 'Edit medicine' : 'Add medicine'))
+        const { createReminder, updateReminder, fetchReminderById } = useMedicineReminders()
 
         const goBack = () => router.back()
         const toggleUnit = () => (showUnitOptions.value = !showUnitOptions.value)
@@ -173,21 +179,54 @@ export default {
                 .map((value) => value?.trim())
                 .filter((value) => Boolean(value))
         }
+        const populateForm = (reminder) => {
+            medicineName.value = reminder.medicineName || ''
+            unit.value = reminder.unit || 'Tablet'
+            dosage.value = reminder.dosage || 1
+            frequency.value = reminder.frequency || 'Once daily'
+            duration.value = reminder.duration || '5 days'
+            intakeMethod.value = reminder.intakeMethod || 'Before meal'
+            const times = (Array.isArray(reminder.times) && reminder.times.length ? reminder.times : [reminder.time || '08:00']).filter(Boolean)
+            timeSlots.value = times.length ? times : ['08:00']
+            const start = reminder.startDate || reminder.medication?.startDate || reminder.createdAt || new Date().toISOString()
+            startDate.value = start ? new Date(start).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+        }
+
+        const loadReminder = async () => {
+            if (!isEditing.value) return
+            const token = localStorage.getItem('token')
+            if (!token || !reminderId.value) return
+            try {
+                initializing.value = true
+                const reminder = await fetchReminderById(token, reminderId.value)
+                populateForm(reminder)
+            } catch (err) {
+                alert(err.message || 'Unable to load reminder details.')
+            } finally {
+                initializing.value = false
+            }
+        }
+
         const saveReminder = async () => {
             const token = localStorage.getItem('token')
             const profileId = localStorage.getItem('selectedProfileId')
-            if (!token || !profileId) {
-                alert('Please select a profile first.')
-                return
-            }
             const times = sanitizedTimes()
             if (!times.length) {
                 alert('Please add at least one time for this reminder.')
                 return
             }
+            if (!token) {
+                alert('Please log in again.')
+                router.push('/login')
+                return
+            }
+            if (!profileId && !isEditing.value) {
+                alert('Please select a profile first.')
+                return
+            }
+            saving.value = true
             try {
-                await createReminder(token, {
-                    profileId,
+                const payload = {
                     medicineName: medicineName.value.trim(),
                     unit: unit.value,
                     dosage: dosage.value,
@@ -197,15 +236,34 @@ export default {
                     duration: duration.value,
                     intakeMethod: intakeMethod.value,
                     startDate: startDate.value
-                })
-                router.back()
+                }
+                if (isEditing.value) {
+                    await updateReminder(token, reminderId.value, payload)
+                } else {
+                    await createReminder(token, {
+                        ...payload,
+                        profileId
+                    })
+                }
+                router.replace('/medical-records/medicine-reminders')
             } catch (err) {
                 alert(err.message || 'Unable to save reminder.')
+            } finally {
+                saving.value = false
             }
         }
 
+        onMounted(() => {
+            loadReminder()
+        })
+
+        watch(reminderId, () => {
+            loadReminder()
+        })
+
         return {
             goBack,
+            headerTitle,
             medicineName,
             unit,
             unitOptions,
@@ -226,7 +284,9 @@ export default {
             maxTimeSlots,
             addTimeSlot,
             removeTimeSlot,
-            saveReminder
+            saveReminder,
+            isEditing,
+            saving
         }
     }
 }

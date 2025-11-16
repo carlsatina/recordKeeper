@@ -420,6 +420,7 @@ export default {
     text-align: center;
 }
 
+
 .edit-actions button {
     border: none;
     border-radius: 12px;

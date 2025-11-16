@@ -200,7 +200,8 @@ export default {
     margin: 0;
     line-height: 1.6;
 }
-</style>
+
+
 .user-bar {
     display: flex;
     align-items: flex-end;
@@ -253,3 +254,6 @@ export default {
 .logout-btn:active {
     transform: translateY(1px);
 }
+
+
+</style>

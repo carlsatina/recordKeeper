@@ -23,6 +23,10 @@ import MedicineReminder from '@/views/mobile/MedicalRecords/MedicineReminder.vue
 import AddMedicineReminder from '@/views/mobile/MedicalRecords/AddMedicineReminder.vue'
 import MedicineReminderHistory from '@/views/mobile/MedicalRecords/MedicineReminderHistory.vue'
 import RecordDetail from '@/views/mobile/MedicalRecords/RecordDetail.vue'
+import WebRecordDetail from '@/views/web/MedicalRecords/RecordDetail.vue'
+import BloodPressureWeb from '@/views/web/MedicalRecords/BloodPressureDetail.vue'
+import BloodSugarWeb from '@/views/web/MedicalRecords/BloodSugarDetail.vue'
+import BodyWeightWeb from '@/views/web/MedicalRecords/BodyWeightDetail.vue'
 import CarMaintenance from '@/views/LandingPage/CarMaintenance.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
 
@@ -72,6 +76,30 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/records/:id',
     name: 'medical-record-detail',
     component: RecordDetail,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/web/records/:id',
+    name: 'medical-record-detail-web',
+    component: WebRecordDetail,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/web/blood-pressure',
+    name: 'blood-pressure-web',
+    component: BloodPressureWeb,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/web/blood-sugar',
+    name: 'blood-sugar-web',
+    component: BloodSugarWeb,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/web/body-weight',
+    name: 'body-weight-web',
+    component: BodyWeightWeb,
     meta: { requiresAuth: true }
   },
   {

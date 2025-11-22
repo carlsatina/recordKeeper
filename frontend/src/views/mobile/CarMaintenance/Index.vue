@@ -157,7 +157,7 @@ export default {
         }
 
         const addMaintenance = () => {
-            alert('Add maintenance record')
+            router.push('/car-maintenance/maintenance/add')
         }
 
         const addVehicle = () => {
@@ -230,7 +230,7 @@ export default {
 }
 
 .top-bar {
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     padding: 12px 16px 8px;
     display: flex;
     align-items: center;
@@ -256,7 +256,7 @@ export default {
 }
 
 .vehicle-card {
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
     border-bottom-left-radius: 22px;
     border-bottom-right-radius: 22px;
@@ -300,7 +300,7 @@ export default {
 }
 
 .odometer-card {
-    background: linear-gradient(135deg, #1988f3, #0d73dd);
+    background: linear-gradient(135deg, #f6a6ff 0%, #f5576c 100%);
     border-radius: 18px;
     padding: 14px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -359,7 +359,7 @@ export default {
 
 .circle-btn {
     border: none;
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
     width: 40px;
     height: 40px;
@@ -387,7 +387,7 @@ export default {
 
 .history-title {
     margin: 0;
-    color: #0d73dd;
+    color: #f5576c;
     font-weight: 700;
 }
 
@@ -517,7 +517,7 @@ export default {
 }
 
 .nav-item.active {
-    color: #0d73dd;
+    color: #f5576c;
     font-weight: 700;
 }
 </style>

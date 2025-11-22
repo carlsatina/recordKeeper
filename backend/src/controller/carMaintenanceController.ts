@@ -72,3 +72,78 @@ export const addVehicle = async(req: Request, res: Response) => {
         })
     }
 }
+
+export const addMaintenanceRecord = async(req: Request, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const {
+        vehicleId,
+        maintenanceType = 'OTHER',
+        title,
+        description,
+        serviceDate,
+        mileageAtService,
+        servicedBy,
+        location,
+        cost,
+        currency = 'USD',
+        partsUsed,
+        laborHours,
+        receiptUrl,
+        tags
+    } = req.body || {}
+
+    if (!vehicleId || !title || !serviceDate) {
+        return res.status(400).json({
+            status: 400,
+            message: 'vehicleId, title, and serviceDate are required'
+        })
+    }
+
+    const vehicle = await prisma.vehicle.findFirst({
+        where: {
+            id: vehicleId,
+            userId: user.id
+        }
+    })
+
+    if (!vehicle) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Vehicle not found for current user'
+        })
+    }
+
+    try {
+        const record = await prisma.maintenanceRecord.create({
+            data: {
+                vehicleId,
+                maintenanceType,
+                title,
+                description: description || null,
+                serviceDate: new Date(serviceDate),
+                mileageAtService: mileageAtService ? Number(mileageAtService) : null,
+                servicedBy: servicedBy || null,
+                location: location || null,
+                cost: cost !== undefined && cost !== null ? Number(cost) : null,
+                currency: currency || 'USD',
+                partsUsed: partsUsed || null,
+                laborHours: laborHours ? Number(laborHours) : null,
+                receiptUrl: receiptUrl || null,
+                tags: Array.isArray(tags) ? tags : []
+            }
+        })
+
+        return res.status(201).json({
+            status: 201,
+            record
+        })
+    } catch (error: any) {
+        const message = error?.message || 'Unable to create maintenance record'
+        return res.status(500).json({
+            status: 500,
+            message
+        })
+    }
+}

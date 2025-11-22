@@ -196,7 +196,7 @@ export default {
 }
 
 .top-banner {
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     padding: 14px 16px 18px;
     display: flex;
     align-items: center;
@@ -280,7 +280,7 @@ input, textarea, select {
 
 .primary-btn {
     border: none;
-    background: linear-gradient(135deg, #0d73dd, #2563eb);
+    background: linear-gradient(135deg, #f093fb, #f5576c);
     color: white;
     padding: 14px;
     border-radius: 12px;

@@ -96,7 +96,7 @@ export default {
 }
 
 .top-banner {
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     padding: 14px 16px 22px;
     display: flex;
     align-items: center;
@@ -126,7 +126,7 @@ export default {
 .vehicle-pill {
     margin: 0 16px;
     margin-top: -28px;
-    background: #0d73dd;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
     border-radius: 16px;
     padding: 12px;
@@ -218,7 +218,7 @@ export default {
 }
 
 .nav-item.active {
-    color: #0d73dd;
+    color: #f5576c;
     font-weight: 700;
 }
 </style>

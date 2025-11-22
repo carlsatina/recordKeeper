@@ -1,6 +1,6 @@
 import { RequestHandler, Router } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { addVehicle } from '../controller/carMaintenanceController'
+import { addVehicle, addMaintenanceRecord } from '../controller/carMaintenanceController'
 import uploadVehicleImage from '../middlewares/uploadVehicleImage'
 
 const makeCarMaintenanceRouter = (
@@ -10,6 +10,7 @@ const makeCarMaintenanceRouter = (
     const router = Router()
 
     router.post('/vehicles', authenticateUser, uploadVehicleImage.single('image'), addVehicle)
+    router.post('/maintenance-records', authenticateUser, addMaintenanceRecord)
 
     return router
 }

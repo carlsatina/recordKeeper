@@ -5,6 +5,7 @@ import vitalsRouter from './src/routes/vitals'
 import profileRouter from './src/routes/profile'
 import medicalRecordsRouter from './src/routes/medicalRecords'
 import medicineReminderRouter from './src/routes/medicineReminders'
+import carMaintenanceRouter from './src/routes/carMaintenance'
 import { PrismaClient} from '@prisma/client';
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
@@ -28,6 +29,7 @@ app.use(express.json())
 app.use('/logo', express.static("./uploaded-images/logo"))
 app.use('/portfolio', express.static("./uploaded-images/portfolio"))
 app.use('/records', express.static("./uploaded-images/records"))
+app.use('/vehicles', express.static("./uploaded-images/vehicles"))
 
 app.get('/', (req, res) => {
     res.send("Hello World!")
@@ -54,6 +56,7 @@ app.use('/api/v1/vitals', vitalsRouter(dbClient, authenticateUser))
 app.use('/api/v1/profiles', profileRouter(dbClient, authenticateUser))
 app.use('/api/v1/medical-records', medicalRecordsRouter(dbClient, authenticateUser))
 app.use('/api/v1/medicine-reminders', medicineReminderRouter(dbClient, authenticateUser))
+app.use('/api/v1/car-maintenance', carMaintenanceRouter(dbClient, authenticateUser))
 
 const options = {
     definition: {

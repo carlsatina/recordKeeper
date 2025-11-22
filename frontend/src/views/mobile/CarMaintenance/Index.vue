@@ -66,9 +66,25 @@
         </div>
     </section>
 
-    <button class="fab" @click="addMaintenance">
-        <mdicon name="plus" :size="24"/>
-    </button>
+    <div class="fab-wrapper">
+        <div v-if="showFabMenu" class="fab-menu">
+            <button class="fab-row" @click="addMaintenance">
+                <span class="fab-label maintenance">Add Maintenance</span>
+                <span class="fab-icon maintenance-icon">
+                    <mdicon name="tools" :size="18"/>
+                </span>
+            </button>
+            <button class="fab-row" @click="addVehicle">
+                <span class="fab-label vehicle">Add Vehicle</span>
+                <span class="fab-icon vehicle-icon">
+                    <mdicon name="car" :size="18"/>
+                </span>
+            </button>
+        </div>
+        <button class="fab" @click="toggleFabMenu">
+            <mdicon :name="showFabMenu ? 'close' : 'plus'" :size="24"/>
+        </button>
+    </div>
 
     <nav class="bottom-nav">
         <button class="nav-item active" @click="goHome">
@@ -103,6 +119,7 @@ export default {
     name: "CarMaintenanceMobile",
     setup() {
         const router = useRouter()
+        const showFabMenu = ref(false)
 
         const vehicle = ref({
             name: 'Toyota Fortuner 2012',
@@ -126,6 +143,10 @@ export default {
             router.push('/')
         }
 
+        const toggleFabMenu = () => {
+            showFabMenu.value = !showFabMenu.value
+        }
+
         const goHome = () => router.push('/car-maintenance')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
@@ -137,6 +158,10 @@ export default {
 
         const addMaintenance = () => {
             alert('Add maintenance record')
+        }
+
+        const addVehicle = () => {
+            router.push('/car-maintenance/vehicles/add')
         }
 
         const openHistory = () => {
@@ -188,7 +213,10 @@ export default {
             goHome,
             goSchedules,
             goVehicles,
-            goSettings
+            goSettings,
+            showFabMenu,
+            toggleFabMenu,
+            addVehicle
         }
     }
 }
@@ -393,9 +421,6 @@ export default {
 }
 
 .fab {
-    position: fixed;
-    bottom: 84px;
-    right: 20px;
     width: 56px;
     height: 56px;
     border-radius: 28px;
@@ -403,6 +428,69 @@ export default {
     background: #f7931e;
     color: white;
     box-shadow: 0 10px 20px rgba(247, 147, 30, 0.35);
+}
+
+.fab-wrapper {
+    position: fixed;
+    bottom: 84px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.fab-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.fab-row {
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+}
+
+.fab-label {
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.fab-label.maintenance {
+    background: #7b4a2b;
+}
+
+.fab-label.vehicle {
+    background: #0f1b7a;
+}
+
+.fab-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background: #0d73dd;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.fab-icon.vehicle-icon {
+    background: linear-gradient(135deg, #0f1b7a, #0d73dd);
+}
+
+.fab-icon.maintenance-icon {
+    background: linear-gradient(135deg, #7b4a2b, #bb7b3f);
 }
 
 .bottom-nav {

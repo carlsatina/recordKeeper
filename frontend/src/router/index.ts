@@ -29,6 +29,9 @@ import BloodPressureWeb from '@/views/web/MedicalRecords/BloodPressureDetail.vue
 import BloodSugarWeb from '@/views/web/MedicalRecords/BloodSugarDetail.vue'
 import BodyWeightWeb from '@/views/web/MedicalRecords/BodyWeightDetail.vue'
 import CarMaintenance from '@/views/LandingPage/CarMaintenance.vue'
+import CarMaintenanceSchedules from '@/views/LandingPage/CarMaintenanceSchedules.vue'
+import CarMaintenanceVehicles from '@/views/LandingPage/CarMaintenanceVehicles.vue'
+import CarMaintenanceSettings from '@/views/LandingPage/CarMaintenanceSettings.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
 
 
@@ -191,6 +194,24 @@ const routes: Array<RouteRecordRaw> = [
     path: '/car-maintenance',
     name: 'car-maintenance',
     component: CarMaintenance,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/car-maintenance/schedules',
+    name: 'car-maintenance-schedules',
+    component: CarMaintenanceSchedules,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/car-maintenance/vehicles',
+    name: 'car-maintenance-vehicles',
+    component: CarMaintenanceVehicles,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/car-maintenance/settings',
+    name: 'car-maintenance-settings',
+    component: CarMaintenanceSettings,
     meta: { requiresAuth: true }
   },
   {

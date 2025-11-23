@@ -8,22 +8,54 @@
         <span class="icon-btn ghost"></span>
     </div>
 
-    <div class="vehicle-pill">
+    <div class="vehicle-pill" @click="toggleVehiclePicker">
         <div class="avatar">
-            <mdicon name="car-sports" :size="26"/>
+            <img v-if="selectedVehicle?.imageUrl" :src="selectedVehicle.imageUrl.startsWith('http') ? selectedVehicle.imageUrl : `${API_BASE_URL}${selectedVehicle.imageUrl}`" alt="Vehicle" />
+            <mdicon v-else name="car-sports" :size="26"/>
         </div>
         <div class="vehicle-meta">
-            <p class="vehicle-name">{{ vehicleName }}</p>
-            <p class="vehicle-type">{{ vehicleType }}</p>
+            <p class="vehicle-name">{{ selectedVehicle ? displayName(selectedVehicle) : 'Select a vehicle' }}</p>
+            <p class="vehicle-type">{{ selectedVehicle?.vehicleType || '' }}</p>
+            <p class="vehicle-odo" v-if="selectedVehicle">Odometer: {{ formattedOdometer }}</p>
+            <p class="vehicle-updated">Last update: {{ formattedOdometerDate || '—' }}</p>
         </div>
-        <mdicon name="chevron-down" :size="22" class="dropdown"/>
+        <div class="vehicle-actions">
+            <button class="update-btn small" @click.stop="updateOdometer" :disabled="!selectedVehicle">
+                Update
+            </button>
+            <mdicon name="chevron-down" :size="22" class="vehicle-dropdown"/>
+        </div>
+    </div>
+    <div v-if="showVehiclePicker" class="vehicle-picker">
+        <button 
+            v-for="v in vehicles" 
+            :key="v.id" 
+            class="picker-item"
+            @click.stop="selectVehicle(v.id)"
+        >
+            <span class="picker-name">{{ displayName(v) }}</span>
+            <span class="picker-odo">Odometer: {{ formatMileage(v.currentMileage) }}</span>
+        </button>
+        <p v-if="!vehicles.length" class="picker-empty">No vehicles yet.</p>
     </div>
 
     <div class="empty-wrapper">
-        <div class="illustration">
-            <mdicon name="car-wrench" :size="96"/>
+        <p class="empty-title">No schedules yet</p>
+        <p class="empty-text">Tap the + button to add a scheduled maintenance for this vehicle.</p>
+    </div>
+
+    <div v-if="showOdometerModal" class="modal-backdrop" @click.self="showOdometerModal = false">
+        <div class="modal">
+            <p class="modal-title">Update Odometer</p>
+            <p class="modal-text">Current: {{ formattedOdometer }}</p>
+            <input v-model="odometerInput" type="number" min="0" class="modal-input" />
+            <div class="modal-actions">
+                <button class="cancel" @click="showOdometerModal = false">Cancel</button>
+                <button class="confirm" :disabled="savingOdometer" @click="saveOdometer">
+                    {{ savingOdometer ? 'Saving...' : 'Save' }}
+                </button>
+            </div>
         </div>
-        <p class="empty-text">No Maintenance Data</p>
     </div>
 
     <button class="fab" @click="addSchedule">
@@ -59,14 +91,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import { API_BASE_URL } from '@/constants/config'
 
 export default {
     name: 'CarMaintenanceSchedulesMobile',
     setup() {
         const router = useRouter()
-        const { listVehicles } = useCarMaintenance()
+        const { listVehicles, updateVehicle } = useCarMaintenance()
         const vehicles = ref([])
         const selectedVehicleId = ref(localStorage.getItem('selectedVehicleId') || '')
+
+        const showVehiclePicker = ref(false)
+        const showOdometerModal = ref(false)
+        const odometerInput = ref('')
+        const savingOdometer = ref(false)
 
         const goBack = () => router.back()
         const goHome = () => router.push('/car-maintenance')
@@ -89,18 +127,67 @@ export default {
             }
         }
 
-        const vehicleName = computed(() => {
-            const v = vehicles.value.find(v => v.id === selectedVehicleId.value)
-            if (!v) return 'Select a vehicle'
-            const parts = [v.make, v.model, v.year].filter(Boolean)
+        const selectedVehicle = computed(() => {
+            return vehicles.value.find(v => v.id === selectedVehicleId.value) || null
+        })
+
+        const formattedOdometer = computed(() => {
+            const value = selectedVehicle.value?.currentMileage
+            if (value === null || value === undefined) return '—'
+            return Number(value).toLocaleString()
+        })
+
+        const formattedOdometerDate = computed(() => formatDate(selectedVehicle.value?.updatedAt || selectedVehicle.value?.createdAt))
+
+        const formatDate = (value) => {
+            if (!value) return ''
+            const date = value instanceof Date ? value : new Date(value)
+            if (Number.isNaN(date.getTime())) return ''
+            return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+        }
+        const displayName = (vehicle) => {
+            if (!vehicle) return 'Vehicle'
+            const parts = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean)
             return parts.join(' ').trim() || 'Vehicle'
-        })
+        }
 
-        const vehicleType = computed(() => {
-            const v = vehicles.value.find(v => v.id === selectedVehicleId.value)
-            return v?.vehicleType || ''
-        })
+        const formatMileage = (value) => {
+            if (value === null || value === undefined) return '—'
+            return `${value.toLocaleString()} km`
+        }
 
+        const toggleVehiclePicker = () => {
+            showVehiclePicker.value = !showVehiclePicker.value
+        }
+        const updateOdometer = () => {
+            if (!selectedVehicle.value) return
+            odometerInput.value = selectedVehicle.value.currentMileage || ''
+            showOdometerModal.value = true
+        }
+
+        const saveOdometer = async() => {
+            if (!selectedVehicle.value) return
+            savingOdometer.value = true
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) throw new Error('You must be logged in.')
+                const payload = new FormData()
+                payload.append('currentMileage', odometerInput.value || '0')
+                await updateVehicle(token, selectedVehicle.value.id, payload)
+                selectedVehicle.value.currentMileage = Number(odometerInput.value) || 0
+                showOdometerModal.value = false
+            } catch (err) {
+                alert(err?.message || 'Unable to update odometer')
+            } finally {
+                savingOdometer.value = false
+            }
+        }
+
+        const selectVehicle = (vehicleId) => {
+            selectedVehicleId.value = vehicleId
+            showVehiclePicker.value = false
+            localStorage.setItem('selectedVehicleId', vehicleId)
+        }
         onMounted(() => {
             loadVehicles()
         })
@@ -112,8 +199,21 @@ export default {
             goVehicles,
             goSettings,
             goReport,
-            vehicleName,
-            vehicleType
+            selectedVehicle,
+            displayName,
+            formatMileage,
+            API_BASE_URL,
+            formattedOdometerDate,
+            formattedOdometer,
+            formatDate,
+            showVehiclePicker,
+            toggleVehiclePicker,
+            selectVehicle,
+            showOdometerModal,
+            odometerInput,
+            updateOdometer,
+            saveOdometer,
+            savingOdometer
         }
     }
 }
@@ -175,6 +275,13 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .vehicle-meta p {
@@ -186,13 +293,88 @@ export default {
     font-size: 15px;
 }
 
+.vehicle-odo {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
 .vehicle-type {
     font-size: 13px;
     opacity: 0.9;
 }
 
-.dropdown {
+.vehicle-updated {
+    font-size: 11px;
+    opacity: 0.8;
+    margin: 2px 0 0;
+}
+
+.vehicle-actions {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vehicle-dropdown {
+    color: white;
+}
+
+.update-btn {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.picker-name {
+    font-weight: 700;
+}
+
+.picker-odo {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.vehicle-picker {
+    margin: 8px 16px 0;
+    background: white;
+    color: #1f2937;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+}
+
+.picker-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.picker-item + .picker-item {
+    border-top: 1px solid #f3f4f6;
+}
+
+.picker-empty {
+    margin: 0;
+    padding: 10px 12px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.vehicle-odo {
+    font-size: 12px;
+    opacity: 0.9;
 }
 
 .empty-wrapper {
@@ -210,6 +392,71 @@ export default {
     margin: 0;
     font-size: 16px;
     color: #9ca3af;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 20;
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+}
+
+.modal-title {
+    margin: 0 0 4px;
+    font-weight: 800;
+    font-size: 16px;
+    color: #1f2937;
+}
+
+.modal-text {
+    margin: 0 0 12px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.modal-input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-actions button {
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 700;
+    border: none;
+}
+
+.cancel {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.confirm {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
 }
 
 .fab {

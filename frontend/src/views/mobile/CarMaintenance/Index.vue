@@ -42,11 +42,17 @@
     <section class="history-section">
         <div class="section-header">
             <h3>Maintenance History</h3>
-            <button class="circle-btn" @click="openHistory">
-                <mdicon name="chevron-right" :size="20"/>
-            </button>
         </div>
 
+        <div class="search-bar">
+            <mdicon name="magnify" :size="20"/>
+            <input
+                v-model="searchTerm"
+                type="text"
+                placeholder="Search maintenance..."
+                @input="debouncedSearch"
+            />
+        </div>
         <div v-if="errorMessage" class="empty-state">{{ errorMessage }}</div>
         <div v-else-if="loading" class="empty-state small">Loading maintenance records...</div>
         <div v-else-if="!maintenanceRecords.length" class="empty-state">
@@ -139,6 +145,7 @@ export default {
         const vehicles = ref([])
         const selectedVehicleId = ref(localStorage.getItem('selectedVehicleId') || '')
         const maintenanceRecords = ref([])
+        const searchTerm = ref('')
         const showVehiclePicker = ref(false)
         const loading = ref(false)
         const errorMessage = ref('')
@@ -245,7 +252,7 @@ export default {
                 selectedVehicleId.value = targetId
                 if (targetId) {
                     localStorage.setItem('selectedVehicleId', targetId)
-                    await loadMaintenanceRecords(targetId)
+                    await loadMaintenanceRecords(targetId, searchTerm.value)
                 } else {
                     localStorage.removeItem('selectedVehicleId')
                     maintenanceRecords.value = []
@@ -257,7 +264,7 @@ export default {
             }
         }
 
-        const loadMaintenanceRecords = async(vehicleId) => {
+        const loadMaintenanceRecords = async(vehicleId, search = '') => {
             if (!vehicleId) {
                 maintenanceRecords.value = []
                 return
@@ -266,7 +273,10 @@ export default {
             try {
                 const token = localStorage.getItem('token')
                 if (!token) throw new Error('You must be logged in.')
-                maintenanceRecords.value = await listMaintenanceRecords(token, vehicleId)
+                const params = new URLSearchParams()
+                params.append('vehicleId', vehicleId)
+                if (search) params.append('search', search)
+                maintenanceRecords.value = await listMaintenanceRecords(token, vehicleId, params)
             } catch (err) {
                 console.error(err)
                 maintenanceRecords.value = []
@@ -283,12 +293,22 @@ export default {
             selectedVehicleId.value = vehicleId
             showVehiclePicker.value = false
             localStorage.setItem('selectedVehicleId', vehicleId)
-            await loadMaintenanceRecords(vehicleId)
+            await loadMaintenanceRecords(vehicleId, searchTerm.value)
         }
 
         onMounted(() => {
             loadVehicles()
         })
+
+        let searchTimer = null
+        const debouncedSearch = () => {
+            if (searchTimer) clearTimeout(searchTimer)
+            searchTimer = setTimeout(() => {
+                if (selectedVehicleId.value) {
+                    loadMaintenanceRecords(selectedVehicleId.value, searchTerm.value)
+                }
+            }, 300)
+        }
 
         const displayName = (vehicle) => {
             if (!vehicle) return 'Vehicle'
@@ -315,6 +335,8 @@ export default {
             goVehicles,
             goSettings,
             addVehicle,
+            searchTerm,
+            debouncedSearch,
             showVehiclePicker,
             toggleVehiclePicker,
             selectVehicle,
@@ -488,6 +510,24 @@ export default {
     padding: 16px;
 }
 
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+    margin: 0 0 12px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
 .section-header {
     display: flex;
     align-items: center;
@@ -499,19 +539,6 @@ export default {
     margin: 0;
     color: #444;
     font-size: 16px;
-}
-
-.circle-btn {
-    border: none;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 16px rgba(13, 115, 221, 0.3);
 }
 
 .history-card {

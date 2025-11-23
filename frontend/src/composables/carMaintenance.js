@@ -107,10 +107,10 @@ export const useCarMaintenance = () => {
         return true
     }
 
-    const listMaintenanceRecords = async(token, vehicleId) => {
+    const listMaintenanceRecords = async(token, vehicleId, searchParams) => {
         if (!token) throw new Error('Missing auth token')
-        const params = new URLSearchParams()
-        if (vehicleId) params.append('vehicleId', vehicleId)
+        const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams()
+        if (vehicleId && !params.has('vehicleId')) params.append('vehicleId', vehicleId)
         const res = await fetch(`${API_BASE_URL}/api/v1/car-maintenance/maintenance-records?${params.toString()}`, {
             headers: {
                 Authorization: `Bearer ${token}`

@@ -39,6 +39,16 @@
         <p v-if="!vehicles.length" class="picker-empty">No vehicles yet.</p>
     </div>
 
+    <div class="search-bar">
+        <mdicon name="magnify" :size="20"/>
+        <input
+            v-model="searchTerm"
+            type="text"
+            placeholder="Search schedules..."
+            @input="debouncedSearch"
+        />
+    </div>
+
     <div v-if="loading" class="empty-wrapper">
         <p class="empty-title">Loading schedules...</p>
         <p class="empty-text">Please wait.</p>
@@ -47,9 +57,9 @@
         <p class="empty-title">Unable to load schedules</p>
         <p class="empty-text">{{ errorMessage }}</p>
     </div>
-    <div v-else-if="reminders.length" class="schedule-list">
+    <div v-else-if="filteredReminders.length" class="schedule-list">
         <div
-            v-for="item in reminders"
+            v-for="item in filteredReminders"
             :key="item.id"
             class="schedule-card"
             @click="openDetail(item)"
@@ -186,6 +196,26 @@ export default {
         const odometerInput = ref('')
         const savingOdometer = ref(false)
         const reminders = ref([])
+        const searchTerm = ref('')
+        const filteredReminders = computed(() => {
+            if (!searchTerm.value.trim()) return reminders.value
+            const term = searchTerm.value.trim().toLowerCase()
+            return reminders.value.filter(r => {
+                const fields = [
+                    r.maintenanceType,
+                    r.title,
+                    r.description
+                ].filter(Boolean).map(v => String(v).toLowerCase())
+                return fields.some(f => f.includes(term))
+            })
+        })
+        let searchTimer = null
+        const debouncedSearch = () => {
+            if (searchTimer) clearTimeout(searchTimer)
+            searchTimer = setTimeout(() => {
+                // local filter only; reminders already loaded
+            }, 250)
+        }
         const loading = ref(false)
         const errorMessage = ref('')
         const toggling = ref({})
@@ -406,6 +436,7 @@ export default {
             saveOdometer,
             savingOdometer,
             reminders,
+            filteredReminders,
             loading,
             errorMessage,
             statusFor,
@@ -419,7 +450,9 @@ export default {
             showDeleteModal,
             confirmDelete,
             cancelDelete,
-            performDelete
+            performDelete,
+            searchTerm,
+            debouncedSearch
         }
     }
 }
@@ -581,6 +614,24 @@ export default {
 .vehicle-odo {
     font-size: 12px;
     opacity: 0.9;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+    margin: 12px 16px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
 }
 
 .empty-wrapper {

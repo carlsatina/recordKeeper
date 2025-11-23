@@ -195,6 +195,7 @@ export const listMaintenanceRecords = async(req: Request, res: Response) => {
     if (!user) return
 
     const vehicleId = req.query.vehicleId as string | undefined
+    const search = (req.query.search as string | undefined)?.trim()
 
     try {
         const ownedVehicles = await prisma.vehicle.findMany({
@@ -211,7 +212,16 @@ export const listMaintenanceRecords = async(req: Request, res: Response) => {
         const filterIds = vehicleId ? [vehicleId] : ownedIds
         const records = await prisma.maintenanceRecord.findMany({
             where: {
-                vehicleId: { in: filterIds }
+                vehicleId: { in: filterIds },
+                ...(search
+                    ? {
+                        OR: [
+                            { maintenanceType: { contains: search, mode: 'insensitive' } },
+                            { title: { contains: search, mode: 'insensitive' } },
+                            { description: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }
+                    : {})
             },
             orderBy: { serviceDate: 'desc' }
         })

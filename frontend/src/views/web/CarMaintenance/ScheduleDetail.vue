@@ -222,20 +222,25 @@ export default {
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    z-index: 12000;
+    z-index: 3000;
 }
 .modal {
+    display: block;
+    position: relative;
     background: white;
     border-radius: 16px;
     padding: 16px;
-    width: 100%;
-    max-width: 340px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 360px;
+    height: auto;
 }
 .modal-title { margin: 0 0 4px; font-weight: 800; font-size: 16px; color: #1f2937; }
 .modal-text { margin: 0 0 12px; color: #6b7280; font-size: 14px; }

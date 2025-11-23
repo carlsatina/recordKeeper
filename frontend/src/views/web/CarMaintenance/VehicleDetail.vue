@@ -171,6 +171,7 @@ export default {
 }
 .hero-image {
     width: 100%;
+    height: 400px;
     aspect-ratio: 16 / 9;
     border-radius: 16px;
     overflow: hidden;
@@ -179,7 +180,7 @@ export default {
     align-items: center;
     justify-content: center;
 }
-.hero-image img { width: 100%; height: 100%; object-fit: cover; }
+.hero-image img { width: 100%; height: 100%; object-fit:fill; }
 .placeholder { color: #6b7280; }
 .top { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: center; }
 .meta { display: flex; flex-direction: column; gap: 4px; }
@@ -199,20 +200,25 @@ export default {
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    z-index: 12000;
+    z-index: 3000;
 }
 .modal {
+    display: block;
+    position: relative;
     background: white;
     border-radius: 16px;
     padding: 16px;
-    width: 100%;
-    max-width: 340px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 360px;
+    height: auto;
 }
 .modal-title { margin: 0 0 4px; font-weight: 800; font-size: 16px; color: #1f2937; }
 .modal-text { margin: 0 0 12px; color: #6b7280; font-size: 14px; }

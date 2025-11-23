@@ -105,7 +105,7 @@
             </div>
             <p class="drawer-date">{{ formatDate(detailReminder.dueDate) || 'No due date' }}</p>
             <div class="drawer-row">
-                <span class="label">Mileagess</span>
+                <span class="label">Mileages</span>
                 <span class="value">{{ formatMileage(detailReminder.dueMileage) }}</span>
             </div>
             <div class="drawer-row">
@@ -187,7 +187,7 @@ export default {
     name: 'CarMaintenanceSchedulesMobile',
     setup() {
         const router = useRouter()
-        const { listVehicles, updateVehicle, listReminders, updateReminder, deleteReminder } = useCarMaintenance()
+        const { listVehicles, updateVehicle, listReminders, updateReminder, deleteReminder, getPreferences } = useCarMaintenance()
         const vehicles = ref([])
         const selectedVehicleId = ref(localStorage.getItem('selectedVehicleId') || '')
 
@@ -196,6 +196,7 @@ export default {
         const odometerInput = ref('')
         const savingOdometer = ref(false)
         const reminders = ref([])
+        const distanceUnit = ref('km')
         const searchTerm = ref('')
         const filteredReminders = computed(() => {
             if (!searchTerm.value.trim()) return reminders.value
@@ -257,7 +258,9 @@ export default {
 
         const formatMileage = (value) => {
             if (value === null || value === undefined) return '—'
-            return `${value.toLocaleString()} km`
+            const num = Number(value) || 0
+            const converted = distanceUnit.value === 'mi' ? num * 0.621371 : num
+            return `${converted.toLocaleString()} ${distanceUnit.value === 'mi' ? 'mi' : 'km'}`
         }
 
         const toggleVehiclePicker = () => {
@@ -375,6 +378,7 @@ export default {
         }
         onMounted(() => {
             loadVehicles()
+            loadPreferences()
         })
 
         const openDetail = (item) => {
@@ -412,6 +416,17 @@ export default {
             }
         }
 
+        const loadPreferences = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const prefs = await getPreferences(token)
+                if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+            } catch (err) {
+                distanceUnit.value = 'km'
+            }
+        }
+
         return {
             vehicles,
             goBack,
@@ -436,6 +451,7 @@ export default {
             saveOdometer,
             savingOdometer,
             reminders,
+            distanceUnit,
             filteredReminders,
             loading,
             errorMessage,

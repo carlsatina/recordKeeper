@@ -27,6 +27,18 @@ model User {
   otps              OtpCode[]
   profiles          Profile[]
   vehicles          Vehicle[]
+  preferences       UserPreference?
+}
+
+model UserPreference {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  userId           String   @unique
+  distanceUnit     String   @default("km")
+  currency         String   @default("USD")
+  maintenanceTypes String[] @default([])
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model OtpCode {

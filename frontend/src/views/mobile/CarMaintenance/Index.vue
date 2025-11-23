@@ -140,7 +140,7 @@ export default {
         const showOdometerModal = ref(false)
         const odometerInput = ref('')
         const savingOdometer = ref(false)
-        const { listVehicles, listMaintenanceRecords, updateVehicle } = useCarMaintenance()
+        const { listVehicles, listMaintenanceRecords, updateVehicle, getPreferences } = useCarMaintenance()
 
         const vehicles = ref([])
         const selectedVehicleId = ref(localStorage.getItem('selectedVehicleId') || '')
@@ -149,6 +149,7 @@ export default {
         const showVehiclePicker = ref(false)
         const loading = ref(false)
         const errorMessage = ref('')
+        const distanceUnit = ref('km')
 
         const selectedVehicle = computed(() => {
             return vehicles.value.find(v => v.id === selectedVehicleId.value) || null
@@ -211,7 +212,9 @@ export default {
         const formattedOdometer = computed(() => {
             const value = selectedVehicle.value?.currentMileage
             if (value === null || value === undefined) return '—'
-            return Number(value).toLocaleString()
+            const converted = distanceUnit.value === 'mi' ? Number(value) * 0.621371 : Number(value)
+            const unitLabel = distanceUnit.value === 'mi' ? 'mi' : 'km'
+            return `${Math.round(converted).toLocaleString()} ${unitLabel}`
         })
 
         const formattedOdometerDate = computed(() => formatDate(selectedVehicle.value?.updatedAt || selectedVehicle.value?.createdAt))
@@ -225,7 +228,10 @@ export default {
 
         const formatMileage = (value) => {
             if (value === null || value === undefined) return '—'
-            return `${value.toLocaleString()} km`
+            const num = Number(value) || 0
+            const converted = distanceUnit.value === 'mi' ? num * 0.621371 : num
+            const unitLabel = distanceUnit.value === 'mi' ? 'mi' : 'km'
+            return `${converted.toLocaleString()} ${unitLabel}`
         }
 
         const formatCurrency = (value, currency = 'USD') => {
@@ -296,8 +302,20 @@ export default {
             await loadMaintenanceRecords(vehicleId, searchTerm.value)
         }
 
+        const loadPreferences = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const prefs = await getPreferences(token)
+                if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+            } catch (err) {
+                distanceUnit.value = 'km'
+            }
+        }
+
         onMounted(() => {
             loadVehicles()
+            loadPreferences()
         })
 
         let searchTimer = null
@@ -344,6 +362,7 @@ export default {
             loading,
             errorMessage,
             displayName,
+            distanceUnit,
             API_BASE_URL,
             openRecordDetail,
             showOdometerModal,

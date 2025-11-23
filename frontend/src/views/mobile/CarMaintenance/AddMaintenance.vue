@@ -52,8 +52,8 @@
 
         <div class="two-col">
             <div class="field">
-                <label>Mileage at Service</label>
-                <input v-model="form.mileageAtService" type="number" min="0" placeholder="80456" />
+                <label>Mileage at Service ({{ distanceUnitLabel }})</label>
+                <input v-model="form.mileageAtService" type="number" min="0" :placeholder="distanceUnit === 'mi' ? '50000' : '80456'" />
             </div>
             <div class="field">
                 <label>Cost</label>
@@ -64,7 +64,9 @@
         <div class="two-col">
             <div class="field">
                 <label>Currency</label>
-                <input v-model="form.currency" type="text" maxlength="3" placeholder="USD" />
+                <select v-model="form.currency">
+                    <option v-for="c in currencyOptions" :key="c" :value="c">{{ c }}</option>
+                </select>
             </div>
             <div class="field">
                 <label>Serviced By</label>
@@ -111,7 +113,7 @@ export default {
     setup() {
         const router = useRouter()
         const route = useRoute()
-        const { createMaintenanceRecord, listVehicles, getMaintenanceRecord } = useCarMaintenance()
+        const { createMaintenanceRecord, listVehicles, getMaintenanceRecord, getPreferences } = useCarMaintenance()
 
         const vehicles = ref([])
         const isEditing = ref(false)
@@ -119,8 +121,8 @@ export default {
         const selectedVehicleName = ref('')
         const initialVehicleId = ref('')
         const showTypeList = ref(false)
-        const typeOptions = [
-            'Engine Oil Change',
+        const defaultTypeOptions = [
+            'Oil Change',
             'Brake Pad Replacement',
             'Tire Rotation',
             'Tire Replacement',
@@ -132,8 +134,12 @@ export default {
             'Brake Fluid Change',
             'Alignment',
             'Inspection',
-            'Repair'
+            'Repair',
+            'Other'
         ]
+        const typeOptions = ref([...defaultTypeOptions])
+        const distanceUnit = ref('km')
+        const currencyOptions = ref(['USD', 'PHP', 'EUR', 'JPY', 'SGD'])
 
         const form = ref({
             vehicleId: '',
@@ -160,6 +166,8 @@ export default {
             cost: form.value.cost || undefined,
             laborHours: form.value.laborHours || undefined
         }))
+
+        const distanceUnitLabel = computed(() => distanceUnit.value === 'mi' ? 'miles' : 'km')
 
         const goBack = () => router.back()
 
@@ -247,6 +255,25 @@ export default {
             return assembled || vehicle.licensePlate || vehicle.vin || 'Vehicle'
         }
 
+        const loadPreferences = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const prefs = await getPreferences(token)
+                if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                    typeOptions.value = prefs.maintenanceTypes
+                } else {
+                    typeOptions.value = [...defaultTypeOptions]
+                }
+                if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+                if (prefs?.currency) form.value.currency = prefs.currency
+                const uniqueCurrencies = new Set([prefs?.currency || 'USD', ...currencyOptions.value])
+                currencyOptions.value = Array.from(uniqueCurrencies)
+            } catch (err) {
+                typeOptions.value = [...defaultTypeOptions]
+            }
+        }
+
         onMounted(async() => {
             const editId = route.query.id
             const vehicleIdQuery = Array.isArray(route.query.vehicleId) ? route.query.vehicleId[0] : route.query.vehicleId
@@ -257,6 +284,7 @@ export default {
             if (editId) {
                 await loadRecord(editId)
             }
+            await loadPreferences()
             await loadVehicles()
             if (isEditing.value) {
                 const veh = vehicles.value.find(v => v.id === form.value.vehicleId)
@@ -277,7 +305,10 @@ export default {
             selectedVehicleName,
             showTypeList,
             typeOptions,
-            selectType
+            selectType,
+            distanceUnit,
+            distanceUnitLabel,
+            currencyOptions
         }
     }
 }

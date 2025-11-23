@@ -76,7 +76,7 @@ export default {
     setup() {
         const router = useRouter()
         const route = useRoute()
-        const { listVehicles, createReminder, getReminder, updateReminder } = useCarMaintenance()
+        const { listVehicles, createReminder, getReminder, updateReminder, getPreferences } = useCarMaintenance()
 
         const vehicles = ref([])
         const form = ref({
@@ -91,7 +91,7 @@ export default {
         const errorMessage = ref('')
         const successMessage = ref('')
         const showTypeDropdown = ref(false)
-        const typeOptions = ref([
+        const defaultTypeOptions = [
             'Oil Change',
             'Brake Pad Replacement',
             'Tire Rotation',
@@ -106,7 +106,8 @@ export default {
             'Inspection',
             'Repair',
             'Other'
-        ])
+        ]
+        const typeOptions = ref([...defaultTypeOptions])
 
         const displayName = (vehicle) => {
             const parts = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean)
@@ -194,8 +195,24 @@ export default {
             }
         }
 
+        const loadPreferences = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const prefs = await getPreferences(token)
+                if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                    typeOptions.value = prefs.maintenanceTypes
+                } else {
+                    typeOptions.value = [...defaultTypeOptions]
+                }
+            } catch (err) {
+                typeOptions.value = [...defaultTypeOptions]
+            }
+        }
+
         onMounted(() => {
             loadVehicles()
+            loadPreferences()
             const paramId = route.params.id
             const queryId = route.query.reminderId
             const resolvedId = (typeof paramId === 'string' && paramId) || (typeof queryId === 'string' && queryId) || ''

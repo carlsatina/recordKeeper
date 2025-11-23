@@ -592,3 +592,61 @@ export const deleteReminder = async(req: Request, res: Response) => {
         })
     }
 }
+export const getPreferences = async(req: Request, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    try {
+        const prefs = await prisma.userPreference.findUnique({
+            where: { userId: user.id }
+        })
+        return res.status(200).json({
+            status: 200,
+            preferences: prefs || {
+                distanceUnit: 'km',
+                currency: 'USD',
+                maintenanceTypes: []
+            }
+        })
+    } catch (error: any) {
+        return res.status(500).json({
+            status: 500,
+            message: error?.message || 'Unable to load preferences'
+        })
+    }
+}
+
+export const savePreferences = async(req: Request, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const {
+        distanceUnit = 'km',
+        currency = 'USD',
+        maintenanceTypes = []
+    } = req.body || {}
+
+    try {
+        const prefs = await prisma.userPreference.upsert({
+            where: { userId: user.id },
+            update: {
+                distanceUnit,
+                currency,
+                maintenanceTypes
+            },
+            create: {
+                userId: user.id,
+                distanceUnit,
+                currency,
+                maintenanceTypes
+            }
+        })
+        return res.status(200).json({
+            status: 200,
+            preferences: prefs
+        })
+    } catch (error: any) {
+        return res.status(500).json({
+            status: 500,
+            message: error?.message || 'Unable to save preferences'
+        })
+    }
+}

@@ -1,6 +1,6 @@
 import { RequestHandler, Router } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { addVehicle, addMaintenanceRecord, listVehicles, listMaintenanceRecords, getVehicle, updateVehicle, deleteVehicle, getMaintenanceRecord, deleteMaintenanceRecord, addReminder, listReminders, updateReminder, getReminder, deleteReminder } from '../controller/carMaintenanceController'
+import { addVehicle, addMaintenanceRecord, listVehicles, listMaintenanceRecords, getVehicle, updateVehicle, deleteVehicle, getMaintenanceRecord, deleteMaintenanceRecord, addReminder, listReminders, updateReminder, getReminder, deleteReminder, getPreferences, savePreferences } from '../controller/carMaintenanceController'
 import uploadVehicleImage from '../middlewares/uploadVehicleImage'
 
 const makeCarMaintenanceRouter = (
@@ -18,6 +18,8 @@ const makeCarMaintenanceRouter = (
     router.post('/maintenance-records', authenticateUser, addMaintenanceRecord)
     router.get('/maintenance-records/:id', authenticateUser, getMaintenanceRecord)
     router.delete('/maintenance-records/:id', authenticateUser, deleteMaintenanceRecord)
+    router.get('/preferences', authenticateUser, getPreferences)
+    router.post('/preferences', authenticateUser, savePreferences)
     router.get('/reminders', authenticateUser, listReminders)
     router.post('/reminders', authenticateUser, addReminder)
     router.put('/reminders/:id', authenticateUser, updateReminder)

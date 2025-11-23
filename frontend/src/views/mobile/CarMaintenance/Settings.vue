@@ -13,45 +13,55 @@
             <mdicon name="account-circle" :size="42"/>
         </div>
         <div class="profile-meta">
-            <p class="name">John Doe</p>
-            <p class="email">john.doe@example.com</p>
+            <p class="name">{{ userName }}</p>
+            <p class="email">{{ userEmail }}</p>
         </div>
     </div>
 
     <div class="settings-list">
         <div class="settings-group">
             <p class="group-title">Preferences</p>
-            <button class="settings-item">
+            <div class="settings-item static">
                 <div class="item-left">
-                    <mdicon name="bell-outline" :size="20"/>
-                    <span>Notifications</span>
+                    <mdicon name="map-marker-distance" :size="20"/>
+                    <span>Distance Unit</span>
                 </div>
-                <mdicon name="chevron-right" :size="18"/>
-            </button>
-            <button class="settings-item">
+                <select v-model="distanceUnit" @change="persistPreferences" class="inline-select">
+                    <option value="km">Kilometers</option>
+                    <option value="mi">Miles</option>
+                </select>
+            </div>
+            <div class="settings-item static">
                 <div class="item-left">
-                    <mdicon name="palette" :size="20"/>
-                    <span>Theme</span>
+                    <mdicon name="currency-usd" :size="20"/>
+                    <span>Currency</span>
                 </div>
-                <span class="pill">Light</span>
-            </button>
-        </div>
-
-        <div class="settings-group">
-            <p class="group-title">Account</p>
-            <button class="settings-item">
+                <select v-model="currency" @change="persistPreferences" class="inline-select">
+                    <option value="USD">USD</option>
+                    <option value="PHP">PHP</option>
+                    <option value="EUR">EUR</option>
+                    <option value="JPY">JPY</option>
+                    <option value="SGD">SGD</option>
+                </select>
+            </div>
+            <div class="settings-item static column">
                 <div class="item-left">
-                    <mdicon name="shield-account" :size="20"/>
-                    <span>Security</span>
+                    <mdicon name="wrench-outline" :size="20"/>
+                    <span>Maintenance Types</span>
                 </div>
-                <mdicon name="chevron-right" :size="18"/>
-            </button>
-            <button class="settings-item">
-                <div class="item-left">
-                    <mdicon name="logout" :size="20"/>
-                    <span>Logout</span>
+                <div class="type-row">
+                    <input v-model="newMaintenanceType" type="text" placeholder="Add maintenance type" />
+                    <button class="add-btn" @click="addMaintenanceType">Add</button>
                 </div>
-            </button>
+                <div class="chip-row">
+                    <span v-for="t in maintenanceTypes" :key="t" class="chip">
+                        {{ t }}
+                        <button class="chip-remove" @click="removeType(t)">
+                            <mdicon name="close" :size="14"/>
+                        </button>
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -81,23 +91,109 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCarMaintenance } from '@/composables/carMaintenance'
 
+import store from '@/store'
 export default {
     name: 'CarMaintenanceSettingsMobile',
     setup() {
         const router = useRouter()
+        const { getPreferences, savePreferences } = useCarMaintenance()
+        const defaultMaintenanceTypes = [
+            'Oil Change',
+            'Brake Pad Replacement',
+            'Tire Rotation',
+            'Tire Replacement',
+            'Battery Replacement',
+            'Air Filter Replacement',
+            'Transmission Service',
+            'Coolant Flush',
+            'Spark Plug Replacement',
+            'Brake Fluid Change',
+            'Alignment',
+            'Inspection',
+            'Repair'
+        ]
+        const userName = ref('User')
+        const userEmail = ref('user@example.com')
+        const distanceUnit = ref('km')
+        const currency = ref('USD')
+        const maintenanceTypes = ref([...defaultMaintenanceTypes])
+        const newMaintenanceType = ref('')
 
         const goBack = () => router.back()
         const goHome = () => router.push('/car-maintenance')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
 
+        const persistPreferences = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) throw new Error('You must be logged in.')
+                await savePreferences(token, {
+                    distanceUnit: distanceUnit.value,
+                    currency: currency.value,
+                    maintenanceTypes: maintenanceTypes.value
+                })
+            } catch (err) {
+                // fallback to local storage
+                localStorage.setItem('distanceUnit', distanceUnit.value)
+                localStorage.setItem('currencyPreference', currency.value)
+                localStorage.setItem('maintenanceTypes', JSON.stringify(maintenanceTypes.value))
+            }
+        }
+
+        const addMaintenanceType = () => {
+            const value = newMaintenanceType.value.trim()
+            if (!value) return
+            if (!maintenanceTypes.value.includes(value)) {
+                maintenanceTypes.value.push(value)
+                persistPreferences()
+            }
+            newMaintenanceType.value = ''
+        }
+
+        const removeType = (type) => {
+            maintenanceTypes.value = maintenanceTypes.value.filter(t => t !== type)
+            persistPreferences()
+        }
+
+        onMounted(async() => {
+            userName.value = store.state.userProfile?.fullName
+            userEmail.value = store.state.userProfile?.email
+            try {
+                const token = localStorage.getItem('token')
+                if (token) {
+                    const prefs = await getPreferences(token)
+                    if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+                    if (prefs?.currency) currency.value = prefs.currency
+                    if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                        maintenanceTypes.value = prefs.maintenanceTypes
+                    } else {
+                        maintenanceTypes.value = [...defaultMaintenanceTypes]
+                    }
+                }
+            } catch (err) {
+                maintenanceTypes.value = [...defaultMaintenanceTypes]
+            }
+        })
+
         return {
             goBack,
             goHome,
             goSchedules,
-            goVehicles
+            goVehicles,
+            userName,
+            userEmail,
+            distanceUnit,
+            currency,
+            maintenanceTypes,
+            newMaintenanceType,
+            addMaintenanceType,
+            removeType,
+            persistPreferences
         }
     }
 }
@@ -209,6 +305,16 @@ export default {
     border-bottom: 1px solid #f1f5f9;
 }
 
+.settings-item.static {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-item.column {
+    gap: 8px;
+}
+
 .settings-item:last-child {
     border-bottom: none;
 }
@@ -218,6 +324,62 @@ export default {
     align-items: center;
     gap: 10px;
     font-weight: 600;
+}
+
+.inline-select {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-weight: 600;
+}
+
+.type-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.type-row input {
+    flex: 1;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.add-btn {
+    border: none;
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 6px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.chip-remove {
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    display: inline-flex;
+    align-items: center;
 }
 
 .pill {

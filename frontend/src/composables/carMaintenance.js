@@ -122,6 +122,37 @@ export const useCarMaintenance = () => {
         return true
     }
 
+    const getPreferences = async(token) => {
+        if (!token) throw new Error('Missing auth token')
+        const res = await fetch(`${API_BASE_URL}/api/v1/car-maintenance/preferences`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to load preferences')
+        }
+        return data.preferences
+    }
+
+    const savePreferences = async(token, payload) => {
+        if (!token) throw new Error('Missing auth token')
+        const res = await fetch(`${API_BASE_URL}/api/v1/car-maintenance/preferences`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to save preferences')
+        }
+        return data.preferences
+    }
+
     const listMaintenanceRecords = async(token, vehicleId, searchParams) => {
         if (!token) throw new Error('Missing auth token')
         const params = searchParams instanceof URLSearchParams ? searchParams : new URLSearchParams()
@@ -223,6 +254,8 @@ export const useCarMaintenance = () => {
         deleteVehicle,
         getVehicle,
         listVehicles,
+        getPreferences,
+        savePreferences,
         createMaintenanceRecord,
         getMaintenanceRecord,
         deleteMaintenanceRecord,

@@ -17,6 +17,8 @@ import BodyWeightEntry from '@/views/mobile/MedicalRecords/BodyWeightEntry.vue'
 import AddBloodPressureRecord from '@/views/mobile/MedicalRecords/AddBloodPressureRecord.vue'
 import AddBloodSugarRecord from '@/views/mobile/MedicalRecords/AddBloodSugarRecord.vue'
 import AddBodyWeightRecord from '@/views/mobile/MedicalRecords/AddBodyWeightRecord.vue'
+import Illness from '@/views/mobile/MedicalRecords/Illness.vue'
+import AddIllnessRecord from '@/views/mobile/MedicalRecords/AddIllnessRecord.vue'
 import AddFamilyMember from '@/views/mobile/MedicalRecords/AddFamilyMember.vue'
 import PersonalInformation from '@/views/mobile/Profile/PersonalInformation.vue'
 import MedicineReminder from '@/views/mobile/MedicalRecords/MedicineReminder.vue'
@@ -206,6 +208,18 @@ const routes: Array<RouteRecordRaw> = [
     path: '/medical-records/body-weight/add',
     name: 'body-weight-add',
     component: AddBodyWeightRecord,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/illness/add',
+    name: 'illness-add',
+    component: AddIllnessRecord,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/medical-records/illness',
+    name: 'illness',
+    component: Illness,
     meta: { requiresAuth: true }
   },
   {

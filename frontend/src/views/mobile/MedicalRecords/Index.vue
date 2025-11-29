@@ -297,6 +297,48 @@
                     </div>
                     <span class="chart-unit-bottom">kg</span>
                 </div>
+
+                <!-- Illness Card -->
+                <div class="health-card illness-card" @click="navigateToIllness">
+                    <div class="health-card-header">
+                        <div>
+                            <h4 class="health-title">Illness</h4>
+                            <p class="health-subtitle">Latest entry</p>
+                        </div>
+                        <mdicon name="chevron-right" :size="20" class="health-chevron"/>
+                    </div>
+
+                    <div v-if="latestIllness" class="illness-summary">
+                        <div class="illness-main">
+                            <div class="illness-diagnosis">{{ latestIllness.diagnosis }}</div>
+                            <div class="illness-status-block">
+                                <div class="pill-badge" :class="latestIllness.status?.toLowerCase()">
+                                    {{ latestIllness.status }}
+                                </div>
+                                <span class="illness-date">
+                                    {{ formatRecordDate(latestIllness.recordedAt || latestIllness.createdAt) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="illness-meta">
+                            <span class="pill-badge subtle">{{ latestIllness.severity || 'MILD' }}</span>
+                            <span v-if="latestIllness.bodyTemperature" class="pill-badge subtle">
+                                {{ latestIllness.bodyTemperature }}°{{ latestIllness.temperatureUnit || 'C' }}
+                            </span>
+                            <span 
+                                v-if="latestIllness.symptoms?.length" 
+                                class="symptom-chip" 
+                                v-for="symptom in latestIllness.symptoms" 
+                                :key="symptom"
+                            >
+                                {{ symptom }}
+                            </span>
+                        </div>
+                    </div>
+                    <div v-else class="health-chart-placeholder">
+                        <p class="placeholder-text">No illness entries yet</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -423,6 +465,7 @@ import BottomNav from '@/components/MedicalRecords/BottomNav.vue'
 import { useProfiles } from '@/composables/profiles'
 import { useBloodPressure } from '@/composables/vitals/bloodPressure'
 import { useBloodSugar } from '@/composables/vitals/bloodSugar'
+import { useIllness } from '@/composables/vitals/illness'
 import { useMedicalRecords } from '@/composables/medicalRecords'
 import { useMedicineReminders } from '@/composables/medicineReminders'
 import { API_BASE_URL } from '@/constants/config'
@@ -535,11 +578,23 @@ export default {
             })
         }
 
+        const navigateToIllness = () => {
+            if (!ensureProfileSelected()) return
+            router.push({
+                path: '/medical-records/illness',
+                query: {
+                    profileId: activeMemberId.value,
+                    profileName: activeProfileName.value
+                }
+            })
+        }
+
         // Week days for charts
         const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
         
         const { records: bpRecords, fetchRecords: fetchBpRecords } = useBloodPressure()
         const { records: bsRecords, fetchRecords: fetchBsRecords } = useBloodSugar()
+        const { records: illnessRecords, fetchRecords: fetchIllnessRecords } = useIllness()
         const {
             records: medicalRecords,
             loading: medicalRecordsLoading,
@@ -584,12 +639,14 @@ export default {
                 bpRecords.value = []
                 bsRecords.value = []
                 bodyWeightRecords.value = []
+                illnessRecords.value = []
                 return
             }
             await Promise.all([
                 fetchBpRecords(token, profileId),
                 fetchBsRecords(token, profileId),
-                fetchBodyWeightRecords(profileId)
+                fetchBodyWeightRecords(profileId),
+                fetchIllnessRecords(token, profileId)
             ])
         }
 
@@ -896,6 +953,11 @@ export default {
             return { weight, change }
         })
 
+        const latestIllness = computed(() => {
+            if (!illnessRecords.value.length) return null
+            return illnessRecords.value[0]
+        })
+
         const profilesComposable = useProfiles()
         const loadProfiles = async () => {
             const token = localStorage.getItem('token')
@@ -960,6 +1022,7 @@ export default {
                 bpRecords.value = []
                 bsRecords.value = []
                 bodyWeightRecords.value = []
+                illnessRecords.value = []
                 medicalRecords.value = []
                 medicalRecordsError.value = null
                 medicineReminders.value = []
@@ -1003,6 +1066,7 @@ export default {
             navigateToBloodPressure,
             navigateToBloodSugar,
             navigateToBodyWeight,
+            navigateToIllness,
             profileMembers,
             profileSections,
             supportSections,
@@ -1020,6 +1084,8 @@ export default {
             bsChartPoints,
             bsChartPath,
             bodyWeightLatest,
+            illnessRecords,
+            latestIllness,
             medicineReminders,
             remindersLoading,
             todaysReminders,
@@ -1576,6 +1642,94 @@ export default {
 
 .reading-status.decrease {
     color: #dc2626;
+}
+
+.illness-card .health-subtitle {
+    color: #6b7280;
+}
+
+.illness-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.illness-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.illness-diagnosis {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.illness-status-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.pill-badge.subtle {
+    background: #f3f4f6;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.pill-badge.recovered,
+.pill-badge.resolved {
+    background: #ecfdf3;
+    color: #16a34a;
+}
+
+.pill-badge.ongoing,
+.pill-badge.chronic {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+.pill-badge.severe,
+.pill-badge.critical {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.illness-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.illness-date {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.symptom-chip {
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 /* Chart Placeholder */

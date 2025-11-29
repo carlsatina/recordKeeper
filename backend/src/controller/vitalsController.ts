@@ -1,4 +1,4 @@
-import { VitalType } from '@prisma/client'
+import { IllnessSeverity, IllnessStatus, VitalType } from '@prisma/client'
 import prisma from '../../lib/prisma'
 import { ExtendedRequest } from '../../extendedRequest'
 
@@ -38,6 +38,29 @@ const findEntryForUser = async(userId: string, entryId: string) => {
             }
         }
     })
+}
+
+const findIllnessForUser = async(userId: string, entryId: string) => {
+    return prisma.illnessEntry.findFirst({
+        where: {
+            id: entryId,
+            profile: {
+                userId
+            }
+        }
+    })
+}
+
+const asIllnessSeverity = (value: unknown): IllnessSeverity | null => {
+    if (typeof value !== 'string') return null
+    const key = value.toUpperCase() as keyof typeof IllnessSeverity
+    return IllnessSeverity[key] || null
+}
+
+const asIllnessStatus = (value: unknown): IllnessStatus | null => {
+    if (typeof value !== 'string') return null
+    const key = value.toUpperCase() as keyof typeof IllnessStatus
+    return IllnessStatus[key] || null
 }
 
 const createBloodPressureRecord = async (req: ExtendedRequest, res: any) => {
@@ -476,6 +499,244 @@ const updateBodyWeightRecord = async (req: ExtendedRequest, res: any) => {
     })
 }
 
+const createIllnessRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const {
+        profileId,
+        diagnosis,
+        symptoms,
+        bodyTemperature,
+        temperatureUnit,
+        severity,
+        status,
+        notes,
+        medications,
+        recordedAt
+    } = req.body
+
+    if (!diagnosis) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Diagnosis is required.'
+        })
+    }
+
+    const profile = await resolveProfileForUser(user.id, profileId)
+    if (!profile) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Profile not found for current user.'
+        })
+    }
+
+    const symptomsArray = Array.isArray(symptoms) ? symptoms.filter(Boolean) : []
+    const medicationsArray = Array.isArray(medications) ? medications.filter(Boolean) : []
+    const tempValue = typeof bodyTemperature !== 'undefined' && bodyTemperature !== null
+        ? Number(bodyTemperature)
+        : null
+    if (tempValue !== null && Number.isNaN(tempValue)) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Body temperature must be a number.'
+        })
+    }
+
+    const parsedSeverity = asIllnessSeverity(severity)
+    const parsedStatus = asIllnessStatus(status)
+
+    const entry = await prisma.illnessEntry.create({
+        data: {
+            profileId: profile.id,
+            diagnosis,
+            symptoms: symptomsArray,
+            bodyTemperature: tempValue,
+            temperatureUnit: temperatureUnit || 'C',
+            severity: parsedSeverity || IllnessSeverity.MILD,
+            status: parsedStatus || IllnessStatus.ONGOING,
+            notes,
+            medications: medicationsArray,
+            recordedAt: recordedAt ? new Date(recordedAt) : new Date()
+        }
+    })
+
+    return res.status(201).json({
+        status: 201,
+        record: entry
+    })
+}
+
+const getIllnessRecords = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const profileId = req.query.profileId as string | undefined
+
+    if (!profileId) {
+        return res.status(400).json({
+            status: 400,
+            message: 'profileId query parameter is required.'
+        })
+    }
+
+    const profile = await resolveProfileForUser(user.id, profileId)
+    if (!profile) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Profile not found for current user.'
+        })
+    }
+
+    const records = await prisma.illnessEntry.findMany({
+        where: {
+            profileId: profile.id
+        },
+        orderBy: {
+            recordedAt: 'desc'
+        }
+    })
+
+    return res.status(200).json({
+        status: 200,
+        records
+    })
+}
+
+const getIllnessRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const entry = await findIllnessForUser(user.id, entryId)
+    if (!entry) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Illness record not found.'
+        })
+    }
+
+    return res.status(200).json({
+        status: 200,
+        record: entry
+    })
+}
+
+const updateIllnessRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const existing = await findIllnessForUser(user.id, entryId)
+    if (!existing) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Illness record not found.'
+        })
+    }
+
+    const {
+        diagnosis,
+        symptoms,
+        bodyTemperature,
+        temperatureUnit,
+        severity,
+        status,
+        notes,
+        medications,
+        recordedAt
+    } = req.body
+
+    const updateData: any = {}
+
+    if (typeof diagnosis !== 'undefined') {
+        updateData.diagnosis = diagnosis
+    }
+
+    if (typeof symptoms !== 'undefined') {
+        updateData.symptoms = Array.isArray(symptoms) ? symptoms.filter(Boolean) : []
+    }
+
+    if (typeof medications !== 'undefined') {
+        updateData.medications = Array.isArray(medications) ? medications.filter(Boolean) : []
+    }
+
+    if (typeof bodyTemperature !== 'undefined') {
+        if (bodyTemperature === null || bodyTemperature === '') {
+            updateData.bodyTemperature = null
+        } else {
+            const value = Number(bodyTemperature)
+            if (Number.isNaN(value)) {
+                return res.status(400).json({ status: 400, message: 'Body temperature must be a number.' })
+            }
+            updateData.bodyTemperature = value
+        }
+    }
+
+    if (typeof temperatureUnit !== 'undefined') {
+        updateData.temperatureUnit = temperatureUnit
+    }
+
+    if (typeof severity !== 'undefined') {
+        const parsed = asIllnessSeverity(severity)
+        if (parsed) {
+            updateData.severity = parsed
+        } else {
+            return res.status(400).json({ status: 400, message: 'Invalid severity value.' })
+        }
+    }
+
+    if (typeof status !== 'undefined') {
+        const parsed = asIllnessStatus(status)
+        if (parsed) {
+            updateData.status = parsed
+        } else {
+            return res.status(400).json({ status: 400, message: 'Invalid status value.' })
+        }
+    }
+
+    if (typeof notes !== 'undefined') {
+        updateData.notes = notes
+    }
+
+    if (recordedAt) {
+        updateData.recordedAt = new Date(recordedAt)
+    }
+
+    const updated = await prisma.illnessEntry.update({
+        where: { id: entryId },
+        data: updateData
+    })
+
+    return res.status(200).json({
+        status: 200,
+        record: updated
+    })
+}
+
+const deleteIllnessRecord = async (req: ExtendedRequest, res: any) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+
+    const entryId = req.params.id
+    const existing = await findIllnessForUser(user.id, entryId)
+    if (!existing) {
+        return res.status(404).json({
+            status: 404,
+            message: 'Illness record not found.'
+        })
+    }
+
+    await prisma.illnessEntry.delete({
+        where: { id: entryId }
+    })
+
+    return res.status(204).json({
+        status: 204,
+        message: 'Illness record deleted.'
+    })
+}
+
 export {
     createBloodPressureRecord,
     createBloodSugarRecord,
@@ -488,5 +749,10 @@ export {
     getBodyWeightRecord,
     updateBloodPressureRecord,
     updateBloodSugarRecord,
-    updateBodyWeightRecord
+    updateBodyWeightRecord,
+    createIllnessRecord,
+    getIllnessRecords,
+    getIllnessRecord,
+    updateIllnessRecord,
+    deleteIllnessRecord
 }

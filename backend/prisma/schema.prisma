@@ -69,6 +69,7 @@ model Profile {
   records           MedicalRecord[]
   medications       Medication[]
   medicineReminders MedicineReminder[]
+  illnesses         IllnessEntry[]
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   vitals            VitalEntry[]
 }
@@ -173,6 +174,27 @@ model VitalEntry {
 
   @@index([profileId, recordedAt])
   @@index([vitalType])
+}
+
+model IllnessEntry {
+  id                String          @id @default(cuid())
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  profileId         String
+  diagnosis         String
+  symptoms          String[]        @default([])
+  bodyTemperature   Float?
+  temperatureUnit   String?         @default("C")
+  severity          IllnessSeverity @default(MILD)
+  status            IllnessStatus   @default(ONGOING)
+  notes             String?
+  medications       String[]        @default([])
+  recordedAt        DateTime        @default(now())
+  profile           Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, recordedAt])
+  @@index([severity])
+  @@index([status])
 }
 
 model MedicineReminder {
@@ -445,6 +467,20 @@ enum VitalType {
   BMI
   RESPIRATORY_RATE
   OTHER
+}
+
+enum IllnessSeverity {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum IllnessStatus {
+  ONGOING
+  RECOVERED
+  RESOLVED
+  CHRONIC
 }
 
 enum ReminderFrequency {

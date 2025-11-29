@@ -12,7 +12,12 @@ import {
     getBodyWeightRecord,
     getBodyWeightRecords,
     getBloodPressureRecords,
-    getBloodSugarRecords
+    getBloodSugarRecords,
+    createIllnessRecord,
+    getIllnessRecords,
+    getIllnessRecord,
+    updateIllnessRecord,
+    deleteIllnessRecord
 } from '../controller/vitalsController'
 
 const makeVitalsRouter = (
@@ -33,6 +38,11 @@ const makeVitalsRouter = (
     router.put('/body-weight/:id', authenticateUser, updateBodyWeightRecord)
     router.get('/body-weight/:id', authenticateUser, getBodyWeightRecord)
     router.get('/body-weight', authenticateUser, getBodyWeightRecords)
+    router.post('/illness', authenticateUser, createIllnessRecord)
+    router.get('/illness', authenticateUser, getIllnessRecords)
+    router.get('/illness/:id', authenticateUser, getIllnessRecord)
+    router.put('/illness/:id', authenticateUser, updateIllnessRecord)
+    router.delete('/illness/:id', authenticateUser, deleteIllnessRecord)
 
     return router
 }

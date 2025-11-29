@@ -38,6 +38,20 @@ export const ReminderFrequency = {
   CUSTOM: 'CUSTOM'
 }
 
+export const IllnessSeverity = {
+  MILD: 'MILD',
+  MODERATE: 'MODERATE',
+  SEVERE: 'SEVERE',
+  CRITICAL: 'CRITICAL'
+}
+
+export const IllnessStatus = {
+  ONGOING: 'ONGOING',
+  RECOVERED: 'RECOVERED',
+  RESOLVED: 'RESOLVED',
+  CHRONIC: 'CHRONIC'
+}
+
 export const VehicleType = {
   CAR: 'CAR',
   SUV: 'SUV',

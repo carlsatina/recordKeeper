@@ -38,6 +38,20 @@ export enum ReminderFrequency {
   CUSTOM = 'CUSTOM'
 }
 
+export enum IllnessSeverity {
+  MILD = 'MILD',
+  MODERATE = 'MODERATE',
+  SEVERE = 'SEVERE',
+  CRITICAL = 'CRITICAL'
+}
+
+export enum IllnessStatus {
+  ONGOING = 'ONGOING',
+  RECOVERED = 'RECOVERED',
+  RESOLVED = 'RESOLVED',
+  CHRONIC = 'CHRONIC'
+}
+
 export enum VehicleType {
   CAR = 'CAR',
   SUV = 'SUV',

@@ -22,6 +22,8 @@ model User {
   budgets           Budget[]
   expenses          Expense[]
   expenseCategories ExpenseCategory[]
+  expenseSchedules  ExpenseSchedule[]
+  subscriptions     Subscription[]
   financialGoals    FinancialGoal[]
   notifications     Notification[]
   otps              OtpCode[]
@@ -362,6 +364,7 @@ model ExpenseCategory {
   isDefault Boolean   @default(false)
   budgets   Budget[]
   expenses  Expense[]
+  subscriptions Subscription[]
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -391,6 +394,7 @@ model Expense {
   recurringUntil DateTime?
   category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules      ExpenseSchedule[]
 
   @@index([userId, expenseDate])
   @@index([categoryId])
@@ -438,6 +442,56 @@ model FinancialGoal {
 
   @@index([userId])
   @@index([completed])
+}
+
+model ExpenseSchedule {
+  id        String           @id @default(cuid())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  userId    String
+  expenseId String?
+  title     String
+  amount    Float
+  currency  String           @default("USD")
+  startDate DateTime
+  endDate   DateTime?
+  frequency ExpenseFrequency @default(MONTHLY)
+  nextRunAt DateTime?
+  lastRunAt DateTime?
+  active    Boolean          @default(true)
+  expense   Expense?         @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@index([expenseId])
+  @@index([frequency])
+}
+
+model Subscription {
+  id             String           @id @default(cuid())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userId         String
+  title          String
+  description    String?
+  amount         Float
+  currency       String           @default("USD")
+  billingCycle   ExpenseFrequency @default(MONTHLY)
+  nextBillingDate DateTime?
+  lastBilledAt   DateTime?
+  categoryId     String?
+  vendor         String?
+  paymentMethod  PaymentMethod    @default(CASH)
+  paymentAccount String?
+  active         Boolean          @default(true)
+  cancelAt       DateTime?
+  notes          String?
+  category       ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@index([categoryId])
+  @@index([billingCycle])
 }
 
 enum Role {

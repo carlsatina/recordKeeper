@@ -6,6 +6,7 @@ import profileRouter from './src/routes/profile'
 import medicalRecordsRouter from './src/routes/medicalRecords'
 import medicineReminderRouter from './src/routes/medicineReminders'
 import carMaintenanceRouter from './src/routes/carMaintenance'
+import expenseRouter from './src/routes/expense'
 import { PrismaClient} from '@prisma/client';
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
@@ -57,6 +58,7 @@ app.use('/api/v1/profiles', profileRouter(dbClient, authenticateUser))
 app.use('/api/v1/medical-records', medicalRecordsRouter(dbClient, authenticateUser))
 app.use('/api/v1/medicine-reminders', medicineReminderRouter(dbClient, authenticateUser))
 app.use('/api/v1/car-maintenance', carMaintenanceRouter(dbClient, authenticateUser))
+app.use('/api/v1/expenses', expenseRouter(dbClient, authenticateUser))
 
 const options = {
     definition: {

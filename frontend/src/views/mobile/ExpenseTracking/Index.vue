@@ -281,7 +281,7 @@
                         <h4>12 categories</h4>
                         <p class="sub">Dining, Transport, Groceries, Utilities...</p>
                     </div>
-                    <button class="primary-chip ghost-chip">
+                    <button class="primary-chip ghost-chip" @click="openAddCategory">
                         <mdicon name="plus-circle-outline" size="18" />
                         <span>Add</span>
                     </button>
@@ -345,6 +345,66 @@
         </section>
     </main>
 
+    <div v-if="showAddCategory" class="overlay">
+        <div class="sheet">
+            <div class="sheet-head">
+                <div class="pill ghost">New category</div>
+                <button class="icon-btn ghost" @click="closeAddCategory">
+                    <mdicon name="close" size="22" />
+                </button>
+            </div>
+            <h3 class="sheet-title">Create category</h3>
+            <p class="sub">Give it a name, color, and icon so it’s easy to spot in insights.</p>
+            <form class="form" @submit.prevent>
+                <label class="field">
+                    <span>Name</span>
+                    <input type="text" placeholder="e.g. Dining" />
+                </label>
+                <label class="field inline">
+                    <span>Color</span>
+                    <div class="color-row">
+                        <button
+                            v-for="color in colorPalette"
+                            :key="color"
+                            class="color-chip"
+                            :style="{ background: color }"
+                            :class="{ active: selectedColor === color }"
+                            type="button"
+                            @click="selectColor(color)"
+                        ></button>
+                        <label class="color-chip picker">
+                            <input type="color" v-model="selectedColor" />
+                        </label>
+                    </div>
+                    <p class="micro">Selected: {{ selectedColor }}</p>
+                </label>
+                <label class="field">
+                    <span>Icon</span>
+                    <div class="icon-grid">
+                        <button
+                            v-for="icon in iconOptions"
+                            :key="icon"
+                            class="icon-bubble"
+                            :class="{ active: selectedIcon === icon }"
+                            type="button"
+                            @click="selectIcon(icon)"
+                        >
+                            <mdicon :name="icon" size="20" />
+                        </button>
+                    </div>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" />
+                    <span>Make this the default category</span>
+                </label>
+                <div class="actions">
+                    <button type="button" class="text-btn" @click="closeAddCategory">Cancel</button>
+                    <button type="button" class="primary-btn solid">Save category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <button class="nav-btn" :class="{ active: activeTab === 'home' }" @click="setTab('home')">
             <mdicon name="home-outline" size="22" />
@@ -377,7 +437,75 @@ export default {
         const activeTab = ref('home')
         const setTab = (tab) => { activeTab.value = tab }
         const barLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-        return { router, activeTab, setTab, barLabels }
+        const showAddCategory = ref(false)
+        const openAddCategory = () => { showAddCategory.value = true }
+        const closeAddCategory = () => { showAddCategory.value = false }
+        const colorPalette = ref([
+            '#ef4444', '#f97316', '#f59e0b', '#84cc16',
+            '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9',
+            '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+            '#ec4899', '#f472b6', '#94a3b8', '#475569',
+            '#000000', '#ffffff'
+        ])
+        const selectedColor = ref(colorPalette.value[9])
+        const iconOptions = ref([
+            'food-fork-drink',
+            'silverware-fork-knife',
+            'cupcake',
+            'cart-outline',
+            'basket-outline',
+            'bag-personal-outline',
+            'bus',
+            'train',
+            'car-wash',
+            'gas-station',
+            'home-outline',
+            'lightbulb-on-outline',
+            'water',
+            'phone-outline',
+            'wifi',
+            'cellphone-nfc',
+            'netflix',
+            'spotify',
+            'video-outline',
+            'cash-multiple',
+            'credit-card-outline',
+            'bank',
+            'piggy-bank',
+            'wallet-outline',
+            'dumbbell',
+            'heart-pulse',
+            'hospital-building',
+            'medical-bag',
+            'laptop',
+            'headphones',
+            'gamepad-variant-outline',
+            'briefcase',
+            'airplane',
+            'pine-tree',
+            'party-popper',
+            'gift-outline',
+            'tshirt-crew-outline'
+        ])
+        const selectedIcon = ref(iconOptions.value[0])
+        const selectColor = (color) => { selectedColor.value = color }
+        const selectIcon = (icon) => { selectedIcon.value = icon }
+
+        return {
+            router,
+            activeTab,
+            setTab,
+            barLabels,
+            showAddCategory,
+            openAddCategory,
+            closeAddCategory,
+            colorPalette,
+            selectedColor,
+            selectColor,
+            iconOptions,
+            selectedIcon,
+            selectIcon
+        }
     }
 }
 </script>
@@ -924,6 +1052,164 @@ export default {
 
 .text-btn.danger-text {
     color: #e11d48;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(10px);
+    display: grid;
+    place-items: end center;
+    padding: 0 12px 16px;
+    z-index: 20;
+}
+
+.sheet {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    padding: 16px;
+    box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.25);
+    animation: slideUp 0.2s ease;
+}
+
+.sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sheet-title {
+    margin: 6px 0 4px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.form {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.field span {
+    font-size: 13px;
+    color: #475569;
+}
+
+.field input {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 15px;
+    background: #f8fafc;
+}
+
+.inline {
+    align-items: center;
+}
+
+.color-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.color-chip {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.color-chip.active {
+    border-color: #0f172a;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.16);
+}
+
+.color-chip.picker {
+    padding: 0;
+    display: grid;
+    place-items: center;
+    background: #f8fafc;
+}
+
+.color-chip.picker input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.icon-bubble {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: grid;
+    place-items: center;
+    background: #f8fafc;
+}
+
+.icon-bubble.active {
+    background: #eef2ff;
+    border-color: #6366f1;
+    color: #4f46e5;
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+}
+
+.micro {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #475569;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+.checkbox input {
+    width: 18px;
+    height: 18px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.primary-btn.solid {
+    width: auto;
+    padding: 12px 16px;
+    border-radius: 12px;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .bottom-nav {

@@ -24,6 +24,8 @@ model User {
   expenseCategories ExpenseCategory[]
   expenseSchedules  ExpenseSchedule[]
   subscriptions     Subscription[]
+  accounts          Account[]
+  currencies        UserCurrency[]
   financialGoals    FinancialGoal[]
   notifications     Notification[]
   otps              OtpCode[]
@@ -38,7 +40,7 @@ model UserPreference {
   updatedAt        DateTime @updatedAt
   userId           String   @unique
   distanceUnit     String   @default("km")
-  currency         String   @default("USD")
+  currency         String   @default("PHP")
   maintenanceTypes String[] @default([])
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -492,6 +494,41 @@ model Subscription {
   @@index([userId, active])
   @@index([categoryId])
   @@index([billingCycle])
+}
+
+model Account {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  name        String
+  institution String?
+  type        String?
+  currency    String    @default("PHP")
+  balance     Float?    @default(0)
+  isDefault   Boolean   @default(false)
+  archived    Boolean   @default(false)
+  notes       String?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+}
+
+model UserCurrency {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  code      String
+  name      String?
+  symbol    String?
+  isDefault Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([userId, code])
+  @@index([userId, isDefault])
 }
 
 enum Role {

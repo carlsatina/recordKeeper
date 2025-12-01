@@ -55,6 +55,7 @@ import CarMaintenanceAddScheduleWeb from '@/views/web/CarMaintenance/AddSchedule
 import CarMaintenanceVehicleDetailWeb from '@/views/web/CarMaintenance/VehicleDetail.vue'
 import CarMaintenanceVehicleDetail from '@/views/mobile/CarMaintenance/VehicleDetail.vue'
 import ExpenseTracking from '@/views/LandingPage/ExpenseTracking.vue'
+import ExpenseAccountsMobile from '@/views/mobile/ExpenseTracking/ManageAccounts.vue'
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -391,6 +392,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/expense-tracking',
     name: 'expense-tracking',
     component: ExpenseTracking,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/expense-tracking/accounts',
+    name: 'expense-accounts',
+    component: ExpenseAccountsMobile,
     meta: { requiresAuth: true }
   },
 

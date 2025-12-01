@@ -727,3 +727,178 @@ export const deleteSubscription = async(req: ExtendedRequest, res: Response) => 
     await prisma.subscription.delete({ where: { id } })
     res.status(200).json({ status: 200, message: 'Subscription deleted' })
 }
+
+// Accounts
+export const listAccounts = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const accounts = await prisma.account.findMany({
+        where: { userId: user.id, archived: false },
+        orderBy: { createdAt: 'desc' }
+    })
+    res.status(200).json({ status: 200, accounts })
+}
+
+export const createAccount = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { name, institution, type, currency, balance, isDefault, notes } = req.body || {}
+    if (!name) return res.status(400).json({ status: 400, message: 'Account name is required' })
+
+    const account = await prisma.$transaction(async(tx) => {
+        if (isDefault) {
+            await tx.account.updateMany({
+                where: { userId: user.id, isDefault: true },
+                data: { isDefault: false }
+            })
+        }
+        return tx.account.create({
+            data: {
+                userId: user.id,
+                name,
+                institution: institution || null,
+                type: type || null,
+                currency: currency || 'PHP',
+                balance: balance !== undefined ? Number(balance) : 0,
+                isDefault: Boolean(isDefault),
+                notes: notes || null
+            }
+        })
+    })
+    res.status(201).json({ status: 201, account })
+}
+
+export const updateAccount = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { id } = req.params
+    if (!id) return res.status(400).json({ status: 400, message: 'account id is required' })
+    const existing = await prisma.account.findFirst({ where: { id, userId: user.id, archived: false } })
+    if (!existing) return res.status(404).json({ status: 404, message: 'Account not found' })
+
+    const { name, institution, type, currency, balance, isDefault, notes, archived } = req.body || {}
+
+    const account = await prisma.$transaction(async(tx) => {
+        if (typeof isDefault !== 'undefined' && isDefault) {
+            await tx.account.updateMany({
+                where: { userId: user.id, isDefault: true },
+                data: { isDefault: false }
+            })
+        }
+        return tx.account.update({
+            where: { id },
+            data: {
+                name: name ?? existing.name,
+                institution: institution ?? existing.institution,
+                type: type ?? existing.type,
+                currency: currency || existing.currency,
+                balance: balance !== undefined ? Number(balance) : existing.balance,
+                isDefault: typeof isDefault === 'undefined' ? existing.isDefault : Boolean(isDefault),
+                notes: notes ?? existing.notes,
+                archived: typeof archived === 'undefined' ? existing.archived : Boolean(archived)
+            }
+        })
+    })
+    res.status(200).json({ status: 200, account })
+}
+
+export const deleteAccount = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { id } = req.params
+    if (!id) return res.status(400).json({ status: 400, message: 'account id is required' })
+    const existing = await prisma.account.findFirst({ where: { id, userId: user.id } })
+    if (!existing) return res.status(404).json({ status: 404, message: 'Account not found' })
+
+    await prisma.account.delete({ where: { id } })
+    res.status(200).json({ status: 200, message: 'Account deleted' })
+}
+
+// Currencies
+export const listCurrencies = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const currencies = await prisma.userCurrency.findMany({
+        where: { userId: user.id },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }]
+    })
+    res.status(200).json({ status: 200, currencies })
+}
+
+export const createCurrency = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { code, name, symbol, isDefault } = req.body || {}
+    if (!code) return res.status(400).json({ status: 400, message: 'Currency code is required' })
+    const normalizedCode = String(code).toUpperCase()
+    const currency = await prisma.$transaction(async(tx) => {
+        if (isDefault) {
+            await tx.userCurrency.updateMany({
+                where: { userId: user.id, isDefault: true },
+                data: { isDefault: false }
+            })
+            await tx.userPreference.updateMany({
+                where: { userId: user.id },
+                data: { currency: normalizedCode }
+            })
+        }
+        return tx.userCurrency.create({
+            data: {
+                userId: user.id,
+                code: normalizedCode,
+                name: name || null,
+                symbol: symbol || null,
+                isDefault: Boolean(isDefault)
+            }
+        })
+    })
+    res.status(201).json({ status: 201, currency })
+}
+
+export const updateCurrency = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { id } = req.params
+    if (!id) return res.status(400).json({ status: 400, message: 'currency id is required' })
+    const existing = await prisma.userCurrency.findFirst({ where: { id, userId: user.id } })
+    if (!existing) return res.status(404).json({ status: 404, message: 'Currency not found' })
+
+    const { code, name, symbol, isDefault } = req.body || {}
+    const normalizedCode = code ? String(code).toUpperCase() : existing.code
+
+    const currency = await prisma.$transaction(async(tx) => {
+        if (typeof isDefault !== 'undefined' && isDefault) {
+            await tx.userCurrency.updateMany({
+                where: { userId: user.id, isDefault: true },
+                data: { isDefault: false }
+            })
+            await tx.userPreference.updateMany({
+                where: { userId: user.id },
+                data: { currency: normalizedCode }
+            })
+        }
+        return tx.userCurrency.update({
+            where: { id },
+            data: {
+                code: normalizedCode,
+                name: name ?? existing.name,
+                symbol: symbol ?? existing.symbol,
+                isDefault: typeof isDefault === 'undefined' ? existing.isDefault : Boolean(isDefault)
+            }
+        })
+    })
+
+    res.status(200).json({ status: 200, currency })
+}
+
+export const deleteCurrency = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { id } = req.params
+    if (!id) return res.status(400).json({ status: 400, message: 'currency id is required' })
+    const existing = await prisma.userCurrency.findFirst({ where: { id, userId: user.id } })
+    if (!existing) return res.status(404).json({ status: 404, message: 'Currency not found' })
+
+    await prisma.userCurrency.delete({ where: { id } })
+    res.status(200).json({ status: 200, message: 'Currency deleted' })
+}

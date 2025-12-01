@@ -25,7 +25,15 @@ import {
     listSubscriptions,
     createSubscription,
     updateSubscription,
-    deleteSubscription
+    deleteSubscription,
+    listAccounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    listCurrencies,
+    createCurrency,
+    updateCurrency,
+    deleteCurrency
 } from '../controller/expenseController'
 
 const makeExpenseRouter = (
@@ -68,6 +76,20 @@ const makeExpenseRouter = (
     router.post('/subscriptions', authenticateUser, createSubscription)
     router.put('/subscriptions/:id', authenticateUser, updateSubscription)
     router.delete('/subscriptions/:id', authenticateUser, deleteSubscription)
+
+    // Accounts
+    router.get('/accounts/list', authenticateUser, listAccounts)
+    router.get('/accounts', authenticateUser, listAccounts)
+    router.post('/accounts', authenticateUser, createAccount)
+    router.put('/accounts/:id', authenticateUser, updateAccount)
+    router.delete('/accounts/:id', authenticateUser, deleteAccount)
+
+    // Currencies
+    router.get('/currencies/list', authenticateUser, listCurrencies)
+    router.get('/currencies', authenticateUser, listCurrencies)
+    router.post('/currencies', authenticateUser, createCurrency)
+    router.put('/currencies/:id', authenticateUser, updateCurrency)
+    router.delete('/currencies/:id', authenticateUser, deleteCurrency)
 
     // Expense detail routes placed after static paths to avoid collisions
     router.get('/:id', authenticateUser, getExpense)

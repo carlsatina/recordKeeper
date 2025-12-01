@@ -308,10 +308,32 @@
                 <div class="row">
                     <div>
                         <p class="label">Currency & accounts</p>
-                        <h4>USD • 3 cards</h4>
-                        <p class="sub">Default card: Sapphire Visa</p>
+                        <h4>{{ defaultCurrency }} • {{ accounts.length }} accounts</h4>
+                        <p class="sub">
+                            Default account: {{ defaultAccountName || 'None' }}
+                        </p>
                     </div>
-                    <button class="text-btn">Manage</button>
+                    <button class="text-btn" @click="router.push('/expense-tracking/accounts')">Manage</button>
+                </div>
+                <div class="chips">
+                    <span
+                        v-for="cur in currencies"
+                        :key="cur.id || cur.code"
+                        class="pill ghost chip-with-icon"
+                        :style="{ borderColor: cur.isDefault ? '#4f46e5' : '#e2e8f0', color: '#0f172a' }"
+                    >
+                        <mdicon :name="cur.isDefault ? 'star' : 'cash-multiple'" size="16" :style="{ color: cur.isDefault ? '#4f46e5' : '#475569' }" />
+                        {{ cur.code }}
+                    </span>
+                    <span
+                        v-for="acct in accounts"
+                        :key="acct.id || acct.name"
+                        class="pill ghost chip-with-icon"
+                        :style="{ borderColor: acct.isDefault ? '#22c55e' : '#e2e8f0', color: '#0f172a' }"
+                    >
+                        <mdicon :name="acct.isDefault ? 'star' : 'credit-card-outline'" size="16" :style="{ color: acct.isDefault ? '#22c55e' : '#475569' }" />
+                        {{ acct.name }}
+                    </span>
                 </div>
             </div>
 
@@ -444,12 +466,16 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useExpenses } from '@/composables/expenses'
+import { useAccounts } from '@/composables/accounts'
+import { useCurrencies } from '@/composables/currencies'
 
 export default {
     name: "ExpenseTrackingMobile",
     setup() {
         const router = useRouter()
         const { createCategory, listCategories } = useExpenses()
+        const { listAccounts } = useAccounts()
+        const { listCurrencies } = useCurrencies()
         const activeTab = ref('home')
         const setTab = (tab) => { activeTab.value = tab }
         const barLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -461,6 +487,12 @@ export default {
         }
         const categories = ref([])
         const categoriesLoaded = ref(false)
+        const accounts = ref([])
+        const accountsLoaded = ref(false)
+        const currencies = ref([])
+        const currenciesLoaded = ref(false)
+        const defaultCurrency = ref('PHP')
+        const defaultAccountName = ref('')
         const colorPalette = ref([
             '#ef4444', '#f97316', '#f59e0b', '#84cc16',
             '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9',
@@ -539,6 +571,34 @@ export default {
             }
         }
 
+        const loadAccounts = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const list = await listAccounts(token)
+                accounts.value = Array.isArray(list) ? list : []
+                const def = accounts.value.find(a => a.isDefault)
+                defaultAccountName.value = def?.name || accounts.value[0]?.name || ''
+                accountsLoaded.value = true
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
+        const loadCurrencies = async() => {
+            try {
+                const token = localStorage.getItem('token')
+                if (!token) return
+                const list = await listCurrencies(token)
+                currencies.value = Array.isArray(list) ? list : []
+                const def = currencies.value.find(c => c.isDefault)
+                defaultCurrency.value = def?.code || defaultCurrency.value
+                currenciesLoaded.value = true
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
         const handleSaveCategory = async() => {
             saveError.value = ''
             saveMessage.value = ''
@@ -575,11 +635,19 @@ export default {
             if (tab === 'profile' && !categoriesLoaded.value) {
                 loadCategories()
             }
+            if (tab === 'profile' && !accountsLoaded.value) {
+                loadAccounts()
+            }
+            if (tab === 'profile' && !currenciesLoaded.value) {
+                loadCurrencies()
+            }
         })
 
         onMounted(() => {
             if (activeTab.value === 'profile') {
                 loadCategories()
+                loadAccounts()
+                loadCurrencies()
             }
         })
 
@@ -592,6 +660,10 @@ export default {
             openAddCategory,
             closeAddCategory,
             categories,
+            accounts,
+            currencies,
+            defaultCurrency,
+            defaultAccountName,
             colorPalette,
             selectedColor,
             selectColor,

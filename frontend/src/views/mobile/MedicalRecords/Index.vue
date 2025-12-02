@@ -422,6 +422,19 @@
         @change-tab="handleTabChange"
     />
 
+        <div v-if="showProfilePrompt && !hasActiveProfile" class="overlay">
+            <div class="sheet confirm-sheet">
+                <div class="sheet-head">
+                    <div class="badge round-pill text-bg-danger">Attention!</div>
+                </div>
+                <h3 class="sheet-title">Profile needed</h3>
+                <p class="sub">Create a profile to access medical records and reminders.</p>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" @click="goAddProfile">Add profile</button>&nbsp;&nbsp;
+                    <button type="button" class="btn btn-secondary" @click="router.push('/')">Home</button>
+                </div>
+            </div>
+        </div>
     <!-- Health Category Modal -->
     <div v-if="showHealthModal" class="modal-overlay" @click="showHealthModal = false">
         <div class="modal-content" @click.stop>
@@ -482,6 +495,7 @@ export default {
         const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'home')
         const showHealthModal = ref(false)
         const selectedCategory = ref('blood-pressure')
+        const showProfilePrompt = ref(false)
         const showToast = ref(false)
         const toastMessage = ref('')
 
@@ -535,6 +549,16 @@ export default {
             // TODO: Navigate to add health data page or show form
             console.log('Selected category:', categoryId)
             showHealthModal.value = false
+        }
+
+        const goProfileTab = () => {
+            activeTab.value = 'profile'
+            showProfilePrompt.value = true
+            router.replace({ path: '/medical-records', query: { tab: 'profile' } })
+        }
+
+        const goAddProfile = () => {
+            router.push('/medical-records/profile/add')
         }
 
         const ensureProfileSelected = () => {
@@ -994,6 +1018,10 @@ export default {
 
         onMounted(() => {
             loadProfiles()
+            if (!activeMemberId.value) {
+                activeTab.value = 'profile'
+                showProfilePrompt.value = true
+            }
         })
 
         watch(activeTab, (val) => {
@@ -1018,6 +1046,7 @@ export default {
                 loadHealthData(id)
                 loadMedicalRecords(id)
                 loadMedicineReminders(id)
+                showProfilePrompt.value = false
             } else {
                 bpRecords.value = []
                 bsRecords.value = []
@@ -1026,6 +1055,8 @@ export default {
                 medicalRecords.value = []
                 medicalRecordsError.value = null
                 medicineReminders.value = []
+                showProfilePrompt.value = true
+                activeTab.value = 'profile'
             }
         }, { immediate: true })
 
@@ -1059,6 +1090,7 @@ export default {
             formatRecordDate,
             weekDays,
             bpChartData,
+            showProfilePrompt,
             showHealthModal,
             selectedCategory,
             healthCategories,
@@ -1076,6 +1108,8 @@ export default {
             selectProfileMember,
             activeProfileName,
             loadProfiles,
+            goProfileTab,
+            goAddProfile,
             showToast,
             toastMessage,
             bpLatest,
@@ -1095,6 +1129,7 @@ export default {
         }
     }
 }
+
 </script>
 
 <style scoped>
@@ -2038,4 +2073,35 @@ export default {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.85);
 }
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    z-index: 1000;
+}
+
+.sheet {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.25);
+}
+
+.confirm-sheet {
+    border: 1px solid #e2e8f0;
+}
+
+.sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
 </style>

@@ -28,7 +28,11 @@
     </div>
 
     <div v-else class="empty-state">
-        No maintenance data for this vehicle.
+        <div class="icon-circle teal">
+            <mdicon name="chart-donut" :size="22" />
+        </div>
+        <h4>No reports yet</h4>
+        <p class="sub">Log maintenance for your vehicles to see reports here.</p>
     </div>
 
     <div class="legend" v-if="legendData.length">
@@ -247,6 +251,16 @@ export default {
     position: absolute;
     inset: 0;
     border-radius: 50%;
+}
+
+.empty-state {
+    margin: 24px 0;
+    text-align: center;
+    color: #475569;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    padding: 20px 0;
 }
 
 .donut:after {

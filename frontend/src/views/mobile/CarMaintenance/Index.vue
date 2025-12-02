@@ -262,6 +262,7 @@ export default {
                 } else {
                     localStorage.removeItem('selectedVehicleId')
                     maintenanceRecords.value = []
+                    router.push('/car-maintenance/vehicles')
                 }
             } catch (err) {
                 errorMessage.value = err?.message || 'Unable to load vehicles'

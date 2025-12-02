@@ -13,43 +13,53 @@
         <input v-model="search" type="text" placeholder="Search Vehicle" />
     </div>
 
-    <div class="vehicle-list">
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-        <div
-            class="vehicle-card"
-            v-for="vehicle in filteredVehicles"
-            :key="vehicle.id"
-            @click="openDetail(vehicle.id)"
-        >
-            <div class="vehicle-thumb">
-                <img 
-                    v-if="vehicle.imageUrl" 
-                    :src="vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`" 
-                    alt="Vehicle" 
-                />
-                <mdicon v-else name="clipboard-list-outline" :size="24"/>
-            </div>
-            <div class="vehicle-info">
-                <p class="vehicle-name">{{ displayName(vehicle) }}</p>
-                <div class="info-row">
-                    <span class="label">License Plate</span>
-                    <span class="value">: {{ formatValue(vehicle.licensePlate) }}</span>
+        <div class="vehicle-list">
+            <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+            <template v-if="filteredVehicles.length">
+                <div
+                    class="vehicle-card"
+                    v-for="vehicle in filteredVehicles"
+                    :key="vehicle.id"
+                    @click="openDetail(vehicle.id)"
+                >
+                    <div class="vehicle-thumb">
+                        <img 
+                            v-if="vehicle.imageUrl" 
+                            :src="vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`" 
+                            alt="Vehicle" 
+                        />
+                        <mdicon v-else name="clipboard-list-outline" :size="24"/>
+                    </div>
+                    <div class="vehicle-info">
+                        <p class="vehicle-name">{{ displayName(vehicle) }}</p>
+                        <div class="info-row">
+                            <span class="label">License Plate</span>
+                            <span class="value">: {{ formatValue(vehicle.licensePlate) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">VIN</span>
+                            <span class="value">: {{ formatValue(vehicle.vin) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Reg. Exp. Date</span>
+                            <span class="value">: <em>{{ formatExpiry(vehicle.registrationExpiryDate) }}</em></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="info-row">
-                    <span class="label">VIN</span>
-                    <span class="value">: {{ formatValue(vehicle.vin) }}</span>
+            </template>
+            <div v-else class="empty-vehicles">
+                <div class="icon-circle teal">
+                    <mdicon name="car" :size="24" />
                 </div>
-                <div class="info-row">
-                    <span class="label">Reg. Exp. Date</span>
-                    <span class="value">: <em>{{ formatExpiry(vehicle.registrationExpiryDate) }}</em></span>
-                </div>
+                <h4>No vehicles yet</h4>
+                <p class="sub">Create your first vehicle to start tracking maintenance and schedules.</p>
             </div>
         </div>
-    </div>
 
-    <button class="fab" @click="addVehicle">
-        <mdicon name="plus" :size="24"/>
-    </button>
+        <button class="fab add-vehicle" @click="addVehicle">
+            <mdicon name="car" :size="20"/>
+            <span>Add vehicle</span>
+        </button>
 
     <nav class="bottom-nav">
         <button class="nav-item" @click="goHome">
@@ -141,12 +151,12 @@ export default {
             search,
             vehicles,
             filteredVehicles,
+            errorMessage,
             goBack,
             goHome,
             goSchedules,
             goSettings,
             goReport,
-            errorMessage,
             displayName,
             formatValue,
             formatExpiry,
@@ -218,6 +228,18 @@ export default {
     gap: 10px;
 }
 
+.empty-vehicles {
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px dashed #cbd5e1;
+    background: #f8fafc;
+    text-align: center;
+    display: grid;
+    gap: 8px;
+    place-items: center;
+}
+
 .vehicle-card {
     display: grid;
     grid-template-columns: 90px 1fr auto;
@@ -250,13 +272,17 @@ export default {
     position: fixed;
     bottom: 84px;
     right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 18px;
     border: none;
-    background: #f7931e;
-    color: white;
-    box-shadow: 0 10px 20px rgba(247, 147, 30, 0.35);
+    background: linear-gradient(135deg, #4f46e5, #22d3ee);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    box-shadow: 0 12px 26px rgba(79, 70, 229, 0.3);
 }
 
 .vehicle-info {

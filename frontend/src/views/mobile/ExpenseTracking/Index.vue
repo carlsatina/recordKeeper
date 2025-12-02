@@ -57,9 +57,12 @@
                                 <span class="pill ghost">{{ item.categoryId ? 'Category' : 'General' }}</span>
                             </div>
                             <div class="progress big">
-                                <div class="bar gradient" :style="{ width: '45%' }"></div>
+                                <div class="bar gradient" :style="{ width: budgetProgress(item) }"></div>
                             </div>
-                            <p class="sub">Remaining insight coming soon</p>
+                            <div class="row">
+                                <p class="sub">Spent: {{ formatMoney(item.currency, item.spent) }}</p>
+                                <p class="sub">Left: {{ formatMoney(item.currency, Math.max(0, item.amount - item.spent)) }}</p>
+                            </div>
                         </div>
                     </div>
                     <div class="budget-controls" v-if="budgets.length > 1">
@@ -179,31 +182,33 @@
                 <div class="row schedule-row">
                     <div class="badge" :class="item.badgeClass">{{ item.when }}</div>
                     <div class="schedule-right">
-                        <button class="pill ghost toggle-auto" @click="toggleAutoPay(item)">
-                            <mdicon :name="item.autoPay ? 'toggle-switch' : 'toggle-switch-off'" size="18" />
-                            <span>{{ item.autoPay ? 'Auto-pay' : 'Reminder' }}</span>
-                        </button>
-                    <div class="schedule-actions">
-                        <button class="icon-btn ghost small" @click="startEditSchedule(item)">
-                            <mdicon name="pencil-outline" size="18" />
-                        </button>
-                        <button class="icon-btn ghost small danger" @click="removeSchedule(item)">
+                        <div class="schedule-actions">
+                            <button class="icon-btn ghost small" @click="startEditSchedule(item)">
+                                <mdicon name="pencil-outline" size="18" />
+                            </button>
+                            <button class="icon-btn ghost small danger" @click="removeSchedule(item)">
                             <mdicon name="trash-can-outline" size="18" />
                         </button>
                         <button
                             v-if="scheduleFilter === 'subscriptions'"
-                            class="pill tiny-pill"
+                            class="pill tiny-pill pay-pill"
                             :class="{ success: item.paid }"
-                            @click="paySubscription(item)"
+                            @click="startPaySubscription(item)"
                         >
-                            <mdicon :name="item.paid ? 'check-circle' : 'check-circle-outline'" size="16" />
+                            <mdicon :name="item.paid ? 'check-circle' : 'cash-check'" size="16" />
                             <span>{{ item.paid ? 'Paid' : 'Pay' }}</span>
                         </button>
                     </div>
                 </div>
                 </div>
                 <div class="schedule-main">
-                    <div class="icon-circle" :class="item.badgeClass">
+                    <div
+                        class="icon-circle"
+                        :style="{
+                            background: item.iconBg || '#e2e8f0',
+                            color: item.iconColor || '#0f172a'
+                        }"
+                    >
                         <mdicon :name="item.icon" size="20" />
                     </div>
                     <div>
@@ -227,16 +232,21 @@
         </section>
         <transition name="month-slide" mode="out-in">
             <div class="transactions-pane" :key="viewMonthKey">
-                <div class="summary-bar">
-                    <div class="flow out">- {{ formatMoney(defaultCurrency, transactionOut) }}</div>
-                    <div class="flow in">+ {{ formatMoney(defaultCurrency, transactionIn) }}</div>
-                    <div class="flow net">= {{ formatMoney(defaultCurrency, transactionNet) }}</div>
+                <div v-if="budgetSummaryPill" class="budget-pill" @click="setTab('home')">
+                    <div>
+                        <p class="micro muted">Budget status</p>
+                        <p class="item-title">
+                            {{ budgetSummaryPill.label }}
+                        </p>
+                    </div>
+                    <div class="budget-pill-progress">
+                        <div class="bar" :style="{ width: budgetSummaryPill.percent }"></div>
+                    </div>
                 </div>
 
-                <section class="transactions-list section" v-if="displayedExpenses.length > 0">
-                    <p class="transactions-date">{{ todayLabel }}</p>
+                <section class="transactions-list section" v-if="transactionsForMonth.length > 0">
                     <transition-group name="month-slide" tag="div">
-                        <div class="item compact-item mt-1 swipeable" v-for="exp in displayedExpenses" :key="exp.id">
+                        <div class="item compact-item mt-1 swipeable" v-for="exp in transactionsForMonth" :key="exp.id">
                             <div class="icon-circle"
                                 :style="{
                                     background: exp.categoryColor || '#e2e8f0',
@@ -247,20 +257,43 @@
                             </div>
                             <div class="item-main">
                                 <p class="item-title">{{ exp.title }}</p>
-                                <p class="item-sub light">{{ formatDate(exp.expenseDate) }}</p>
+                                <p class="item-sub light">
+                                    {{ formatDate(exp.expenseDate) }}
+                                    <span v-if="exp.planned" class="pill tiny-pill ghost planned-pill muted">Upcoming</span>
+                                    <span class="inline-actions">
+                                        <button
+                                            v-if="exp.planned"
+                                            class="pill tiny-pill success"
+                                            @click="handlePayPlanned(exp)"
+                                        >
+                                            <mdicon name="cash-check" size="16" />
+                                            <span>Pay</span>
+                                        </button>
+                                        <button
+                                            v-if="!exp.planned"
+                                            class="pill tiny-pill"
+                                            @click="startEditExpense(exp)"
+                                        >
+                                            <mdicon name="pencil-outline" size="16" />
+                                        </button>
+                                        <button
+                                            v-if="!exp.planned"
+                                            class="pill tiny-pill danger"
+                                            @click="startDeleteExpense(exp)"
+                                        >
+                                            <mdicon name="trash-can-outline" size="16" />
+                                        </button>
+                                    </span>
+                                </p>
                             </div>
-                            <div class="item-amount">- {{ formatMoney(exp.currency || defaultCurrency, exp.amount) }}</div>
-                            <div class="swipe-actions">
-                                <button class="pill tiny-pill danger" @click="handleDeleteExpense(exp)">
-                                    <mdicon name="trash-can-outline" size="16" />
-                                    <span>Delete</span>
-                                </button>
+                            <div class="item-amount" :class="{ planned: exp.planned }">
+                                <span>- {{ formatMoney(exp.currency || defaultCurrency, exp.amount) }}</span>
                             </div>
                         </div>
                     </transition-group>
                     <div class="transaction-footer">
                         <p class="sub">Total cash flow: {{ defaultCurrency }} {{ transactionNet }}</p>
-                        <p class="sub">{{ displayedExpenses.length }} transactions</p>
+                        <p class="sub">{{ transactionsForMonth.length }} items</p>
                     </div>
                 </section>
                 <p v-else class="sub">No transactions yet.</p>
@@ -269,6 +302,84 @@
         <button class="fab" @click="openExpenseSheet">
             <mdicon name="plus" size="24" />
         </button>
+    </main>
+
+    <main class="content" v-else-if="activeTab === 'insights'">
+        <section class="section insights-hero">
+            <div>
+                <p class="eyebrow">This month</p>
+                <h2>Spending insights</h2>
+                <p class="sub">{{ insightsRangeLabel }}</p>
+            </div>
+            <button class="inline-pill ghost" @click="setTab('transactions')">
+                <mdicon name="swap-horizontal" size="18" />
+                <span>View transactions</span>
+            </button>
+        </section>
+
+        <section class="insights-grid">
+            <div class="insight-card glow">
+                <p class="label">Total spent</p>
+                <h3>{{ formatMoney(defaultCurrency, insightsTotal) }}</h3>
+                <p class="sub">{{ insightsCount }} transactions</p>
+            </div>
+            <div class="insight-card glow purple">
+                <p class="label">Avg per day</p>
+                <h3>{{ formatMoney(defaultCurrency, insightsAvgPerDay) }}</h3>
+                <p class="sub">So far this month</p>
+            </div>
+            <div class="insight-card glow green">
+                <p class="label">Top category</p>
+                <div v-if="topCategory" class="chip-with-icon">
+                    <mdicon :name="topCategory.icon || 'star'" size="18" :style="{ color: topCategory.color || '#0f172a' }" />
+                    <span>{{ topCategory.name }}</span>
+                </div>
+                <p v-else class="sub">No data yet</p>
+            </div>
+        </section>
+
+        <section class="section insight-block" v-if="categoryBreakdown.length">
+            <div class="section-head">
+                <h4>By category</h4>
+                <span class="micro muted">{{ categoryBreakdown.length }} categories</span>
+            </div>
+            <div class="category-list">
+                <div class="cat-row" v-for="cat in categoryBreakdown" :key="cat.id || cat.name">
+                    <div class="icon-circle" :style="{ background: cat.color || '#e2e8f0', color: cat.color ? '#fff' : '#0f172a' }">
+                        <mdicon :name="cat.icon || 'label-outline'" size="18" />
+                    </div>
+                    <div class="cat-main">
+                        <p class="item-title">{{ cat.name }}</p>
+                        <p class="item-sub">{{ formatMoney(defaultCurrency, cat.total) }}</p>
+                        <div class="progress slim">
+                            <div class="bar" :style="{ width: cat.percentLabel, background: cat.color || '#4f46e5' }"></div>
+                        </div>
+                    </div>
+                    <div class="cat-percent">{{ cat.percentLabel }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section insight-block">
+            <div class="section-head">
+                <h4>Budget health</h4>
+                <span class="micro muted">{{ budgets.length ? budgets.length + ' budgets' : 'No budgets yet' }}</span>
+            </div>
+            <div v-if="budgets.length" class="budget-health">
+                <div v-for="b in budgets.slice(0,3)" :key="b.id" class="budget-health-card">
+                    <div class="row">
+                        <p class="item-title">{{ b.name }}</p>
+                        <span class="pill ghost">{{ b.categoryId ? 'Category' : 'General' }}</span>
+                    </div>
+                    <p class="item-sub">{{ formatDate(b.startDate) }} - {{ formatDate(b.endDate) }}</p>
+                    <p class="item-title">{{ formatMoney(b.currency || defaultCurrency, b.spent || 0) }} / {{ formatMoney(b.currency || defaultCurrency, b.amount || 0) }}</p>
+                    <div class="progress slim">
+                        <div class="bar gradient" :style="{ width: budgetProgress(b) }"></div>
+                    </div>
+                </div>
+            </div>
+            <p v-else class="sub">Create a budget to see health here.</p>
+        </section>
     </main>
 
     <main class="content" v-else-if="activeTab === 'profile'">
@@ -376,6 +487,37 @@
         </div>
     </div>
 
+            <div class="card profile-card">
+                <div class="row">
+                    <div>
+                        <p class="label">Manage budgets</p>
+                        <h4>Budgets</h4>
+                        <p class="sub">{{ budgets.length ? `${budgets.length} active` : 'No budgets yet' }}</p>
+                    </div>
+                    <button class="inline-pill" @click="openBudgetSheet">
+                        <mdicon name="plus-circle-outline" size="16" />
+                        <span>New</span>
+                    </button>
+                </div>
+                <div v-if="budgets.length" class="budget-manage-list">
+                    <div class="manage-row" v-for="b in budgets" :key="b.id">
+                        <div>
+                            <p class="item-title">{{ b.name }}</p>
+                            <p class="item-sub">{{ formatDate(b.startDate) }} - {{ formatDate(b.endDate) }}</p>
+                            <p class="sub">{{ formatMoney(b.currency || defaultCurrency, b.spent || 0) }} / {{ formatMoney(b.currency || defaultCurrency, b.amount || 0) }}</p>
+                        </div>
+                        <div class="row manage-actions">
+                            <button class="icon-btn ghost" @click="startEditBudget(b)">
+                                <mdicon name="pencil-outline" size="18" />
+                            </button>
+                            <button class="icon-btn ghost danger" @click="handleDeleteBudget(b)">
+                                <mdicon name="trash-can-outline" size="18" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p v-else class="sub">Create a budget to get started.</p>
+            </div>
 
             <div class="card profile-card danger">
                 <div class="row">
@@ -445,13 +587,27 @@
                     <input type="text" v-model="expenseForm.currency" />
                 </label>
                 <label class="field">
+                    <span>Budget (optional)</span>
+                    <select v-model="expenseForm.budgetId">
+                        <option value="">Auto-apply to matching budgets</option>
+                        <option
+                            v-for="b in activeBudgetsForExpense"
+                            :key="b.id"
+                            :value="b.id"
+                        >
+                            {{ b.name }} • {{ formatMoney(b.currency || defaultCurrency, b.amount) }}
+                        </option>
+                    </select>
+                    <p class="micro">Showing active budgets that overlap the expense date.</p>
+                </label>
+                <label class="field">
                     <span>Category</span>
-                    <div class="pill-row" ref="expenseCategoryRow">
+                    <div class="pill-row inline-cats" ref="expenseCategoryRow">
                         <button
                             v-for="cat in categories"
                             :key="cat.id"
                             type="button"
-                            class="pill-option"
+                            class="pill-option compact"
                             :class="{ active: expenseForm.categoryId === cat.id }"
                             @click="expenseForm.categoryId = cat.id"
                             :style="{ borderColor: cat.color || '#e2e8f0', color: '#0f172a' }"
@@ -461,7 +617,7 @@
                         </button>
                         <button
                             type="button"
-                            class="pill-option"
+                            class="pill-option compact"
                             :class="{ active: !expenseForm.categoryId }"
                             @click="expenseForm.categoryId = ''"
                         >
@@ -470,7 +626,7 @@
                         </button>
                         <button
                             type="button"
-                            class="pill-option add-pill"
+                            class="pill-option add-pill compact"
                             @click="goToAddCategory"
                         >
                             <mdicon name="plus" size="20" />
@@ -581,11 +737,11 @@
         <div class="sheet">
             <div class="sheet-head">
                 <div class="pill ghost">New budget</div>
-                <button class="icon-btn ghost" @click="closeBudgetSheet">
-                    <mdicon name="close" size="22" />
-                </button>
-            </div>
-            <h3 class="sheet-title">Create budget</h3>
+                    <button class="icon-btn ghost" @click="closeBudgetSheet">
+                        <mdicon name="close" size="22" />
+                    </button>
+                </div>
+            <h3 class="sheet-title">{{ editingBudgetId ? 'Edit budget' : 'Create budget' }}</h3>
             <form class="form" @submit.prevent>
                 <label class="field">
                     <span>Name</span>
@@ -615,15 +771,15 @@
                 <div class="actions">
                     <button type="button" class="text-btn" @click="closeBudgetSheet">Cancel</button>
                     <button type="button" class="primary-btn solid" :disabled="budgetSaving" @click="handleSaveBudget">
-                        {{ budgetSaving ? 'Saving...' : 'Save budget' }}
+                        {{ budgetSaving ? 'Saving...' : (editingBudgetId ? 'Update budget' : 'Save budget') }}
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div v-if="showScheduleSheet" class="overlay">
-        <div class="sheet">
+        <div v-if="showScheduleSheet" class="overlay">
+            <div class="sheet">
             <div class="sheet-head">
                 <div class="pill ghost">New schedule</div>
                 <button class="icon-btn ghost" @click="closeScheduleSheet">
@@ -675,12 +831,12 @@
                 </label>
                 <label class="field">
                     <span>Category</span>
-                    <div class="pill-row" ref="scheduleCategoryRow">
+                    <div class="pill-row inline-cats" ref="scheduleCategoryRow">
                         <button
                             v-for="cat in categories"
                             :key="cat.id"
                             type="button"
-                            class="pill-option"
+                            class="pill-option compact"
                             :class="{ active: scheduleForm.categoryId === cat.id }"
                             @click="scheduleForm.categoryId = cat.id"
                             :style="{ borderColor: cat.color || '#e2e8f0', color: '#0f172a' }"
@@ -690,7 +846,7 @@
                         </button>
                         <button
                             type="button"
-                            class="pill-option"
+                            class="pill-option compact"
                             :class="{ active: !scheduleForm.categoryId }"
                             @click="scheduleForm.categoryId = ''"
                         >
@@ -699,7 +855,7 @@
                         </button>
                         <button
                             type="button"
-                            class="pill-option add-pill"
+                            class="pill-option add-pill compact"
                             @click="goToAddCategory"
                         >
                             <mdicon name="plus" size="18" />
@@ -722,6 +878,66 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div v-if="showPayConfirm" class="overlay">
+        <div class="sheet confirm-sheet">
+            <div class="sheet-head">
+                <div class="pill ghost">Confirm payment</div>
+                <button class="icon-btn ghost" @click="closePayConfirm">
+                    <mdicon name="close" size="22" />
+                </button>
+            </div>
+            <h3 class="sheet-title">Pay this subscription?</h3>
+            <div class="confirm-card">
+                <div class="icon-circle green">
+                    <mdicon name="cash-check" size="20" />
+                </div>
+                <div>
+                    <p class="item-title">{{ payTarget?.title || 'Subscription' }}</p>
+                    <p class="item-sub">{{ payTarget?.when }}</p>
+                </div>
+                <div class="item-amount">- {{ formatMoney(defaultCurrency, payTarget?.rawAmount || payTarget?.amount || 0) }}</div>
+            </div>
+            <p class="sub">This will log the payment as an expense and schedule the next billing date.</p>
+            <p v-if="payError" class="error-text">{{ payError }}</p>
+            <div class="actions">
+                <button type="button" class="text-btn" @click="closePayConfirm">Cancel</button>
+                <button type="button" class="primary-btn solid" :disabled="paying" @click="paySubscription">
+                    {{ paying ? 'Processing...' : 'Confirm & pay' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="showDeleteConfirm" class="overlay">
+        <div class="sheet confirm-sheet">
+            <div class="sheet-head">
+                <div class="pill ghost">Confirm delete</div>
+                <button class="icon-btn ghost" @click="closeDeleteConfirm">
+                    <mdicon name="close" size="22" />
+                </button>
+            </div>
+            <h3 class="sheet-title">Delete this expense?</h3>
+            <div class="confirm-card">
+                <div class="icon-circle red-bg">
+                    <mdicon name="trash-can-outline" size="20" />
+                </div>
+                <div>
+                    <p class="item-title">{{ deleteTarget?.title || 'Expense' }}</p>
+                    <p class="item-sub">{{ deleteTarget ? formatDate(deleteTarget.expenseDate) : '' }}</p>
+                </div>
+                <div class="item-amount">- {{ formatMoney(deleteTarget?.currency || defaultCurrency, deleteTarget?.amount || 0) }}</div>
+            </div>
+            <p class="sub">This will remove the entry from your ledger and budgets.</p>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+            <div class="actions">
+                <button type="button" class="text-btn" @click="closeDeleteConfirm">Cancel</button>
+                <button type="button" class="primary-btn solid danger" :disabled="deleting" @click="confirmDeleteExpense">
+                    {{ deleting ? 'Deleting...' : 'Delete' }}
+                </button>
+            </div>
         </div>
     </div>
 
@@ -760,16 +976,17 @@ export default {
     name: "ExpenseTrackingMobile",
     setup() {
         const router = useRouter()
-        const { listExpenses, createExpense, deleteExpense, createCategory, listCategories } = useExpenses()
+        const { listExpenses, createExpense, deleteExpense, createCategory, listCategories, updateExpense } = useExpenses()
         const { listAccounts } = useAccounts()
         const { listCurrencies } = useCurrencies()
-        const { listBudgetSummary, listBudgets, createBudget } = useBudgets()
+        const { listBudgetSummary, listBudgets, createBudget, updateBudget, deleteBudget } = useBudgets()
         const { listSubscriptions, createSubscription, updateSubscription, deleteSubscription, markSubscriptionPaid } = useSubscriptions()
         const {
             listExpenseSchedules,
             createExpenseSchedule,
             updateExpenseSchedule,
-            deleteExpenseSchedule
+            deleteExpenseSchedule,
+            markExpenseSchedulePaid
         } = useExpenseSchedules()
         const activeTab = ref('home')
         const setTab = (tab) => { activeTab.value = tab }
@@ -812,6 +1029,10 @@ export default {
         const budgetError = ref('')
         const budgetSaving = ref(false)
         const showScheduleSheet = ref(false)
+        const showPayConfirm = ref(false)
+        const payTarget = ref(null)
+        const payError = ref('')
+        const paying = ref(false)
         const scheduleSaving = ref(false)
         const scheduleError = ref('')
         const showQuickActions = ref(false)
@@ -824,8 +1045,10 @@ export default {
             currency: 'PHP',
             categoryId: '',
             expenseDate: todayStr(),
-            type: 'DEFAULT'
+            type: 'DEFAULT',
+            budgetId: ''
         })
+        const editingExpenseId = ref(null)
         const schedules = ref([])
         const scheduleForm = ref({
             title: '',
@@ -838,6 +1061,7 @@ export default {
         })
         const expenseSchedules = ref([])
         const scheduleFilter = ref('subscriptions')
+        const editingBudgetId = ref(null)
         const filteredSchedules = computed(() => {
             return scheduleFilter.value === 'subscriptions' ? schedules.value : expenseSchedules.value
         })
@@ -852,6 +1076,45 @@ export default {
             const base = new Date()
             return new Date(base.getFullYear(), base.getMonth() + monthOffset.value, 1)
         })
+        const insightsMonthStart = computed(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+        const insightsMonthEnd = computed(() => new Date(insightsMonthStart.value.getFullYear(), insightsMonthStart.value.getMonth() + 1, 0))
+        const insightsExpenses = computed(() => {
+            return expenses.value.filter(exp => {
+                if (!exp.expenseDate) return false
+                const d = new Date(exp.expenseDate)
+                return d >= insightsMonthStart.value && d <= insightsMonthEnd.value
+            })
+        })
+        const insightsTotal = computed(() => insightsExpenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0))
+        const insightsCount = computed(() => insightsExpenses.value.length)
+        const insightsAvgPerDay = computed(() => {
+            const todayDay = Math.min(new Date().getDate(), insightsMonthEnd.value.getDate())
+            if (!todayDay) return 0
+            return insightsTotal.value / todayDay
+        })
+        const categoryBreakdown = computed(() => {
+            const total = insightsTotal.value || 1
+            const map = new Map()
+            insightsExpenses.value.forEach(exp => {
+                const key = exp.categoryId || 'uncategorized'
+                const existing = map.get(key) || { total: 0, name: 'Uncategorized', icon: 'shape-outline', color: '#e2e8f0', id: key }
+                existing.total += Number(exp.amount || 0)
+                const cat = categories.value.find(c => c.id === exp.categoryId)
+                existing.name = cat?.name || existing.name
+                existing.icon = cat?.icon || existing.icon
+                existing.color = cat?.color || existing.color
+                map.set(key, existing)
+            })
+            return Array.from(map.values())
+                .map(c => ({ ...c, percent: (c.total / total) * 100, percentLabel: `${Math.round((c.total / total) * 100)}%` }))
+                .sort((a, b) => b.total - a.total)
+        })
+        const topCategory = computed(() => categoryBreakdown.value[0] || null)
+        const insightsRangeLabel = computed(() => {
+            const start = insightsMonthStart.value.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            const end = insightsMonthEnd.value.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            return `${start} - ${end}`
+        })
         const viewMonthKey = computed(() => `${viewMonthStart.value.getFullYear()}-${viewMonthStart.value.getMonth()}`)
         const monthLabel = (offset = 0) => {
             const d = new Date(viewMonthStart.value.getFullYear(), viewMonthStart.value.getMonth() + offset, 1)
@@ -864,6 +1127,39 @@ export default {
                 const d = new Date(exp.expenseDate)
                 return d.getFullYear() === target.getFullYear() && d.getMonth() === target.getMonth()
             })
+        })
+        const plannedTransactions = computed(() => {
+            const target = viewMonthStart.value
+            const items = []
+            const pushItem = (src, type) => {
+                const when = src.rawNextDate || src.nextBillingDate || src.nextRunAt || src.startDate
+                if (!when) return
+                const d = new Date(when)
+                if (d.getFullYear() !== target.getFullYear() || d.getMonth() !== target.getMonth()) return
+                const cat = categories.value.find(c => c.id === src.categoryId)
+                items.push({
+                    id: `${type}-${src.id}`,
+                    title: src.title,
+                    amount: src.rawAmount || src.amount,
+                    currency: src.currency || defaultCurrency.value,
+                    expenseDate: when,
+                    planned: true,
+                    type,
+                    categoryIcon: src.categoryIcon || src.icon || cat?.icon || 'calendar-clock',
+                    categoryColor: src.categoryColor || src.iconBg || cat?.color || '#e2e8f0',
+                    categoryId: src.categoryId || ''
+                })
+            }
+            schedules.value.forEach(sub => pushItem(sub, 'subscription'))
+            expenseSchedules.value.forEach(exp => pushItem(exp, 'planned'))
+            return items
+        })
+        const transactionsForMonth = computed(() => {
+            const all = [
+                ...displayedExpenses.value.map(exp => ({ ...exp, planned: false })),
+                ...plannedTransactions.value
+            ]
+            return all.sort((a, b) => new Date(b.expenseDate) - new Date(a.expenseDate))
         })
         const currencySymbol = (cur) => {
             const map = { PHP: '₱', USD: '$', EUR: '€', GBP: '£', JPY: '¥' }
@@ -878,6 +1174,69 @@ export default {
         const todayLabel = computed(() => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }))
         const changeMonth = (step) => {
             monthOffset.value += step
+        }
+        const budgetProgress = (budget) => {
+            const total = Number(budget?.amount || 0)
+            const spent = Number(budget?.spent || 0)
+            if (!total) return '0%'
+            const pct = Math.min(Math.max((spent / total) * 100, 0), 100)
+            return `${pct}%`
+        }
+        const activeBudgetsForExpense = computed(() => {
+            if (!budgets.value.length) return []
+            const dateStr = expenseForm.value.expenseDate || todayStr()
+            const dateObj = new Date(dateStr)
+            const list = budgets.value.filter(b => {
+                const start = new Date(b.startDate)
+                const end = new Date(b.endDate)
+                return start <= dateObj && end >= dateObj
+            })
+            return list
+        })
+        const budgetSummaryPill = computed(() => {
+            if (!budgets.value.length) return null
+            const now = viewMonthStart.value
+            const active = budgets.value.find(b => {
+                const start = new Date(b.startDate)
+                const end = new Date(b.endDate)
+                return start <= now && end >= now
+            }) || budgets.value[0]
+            const total = Number(active.amount || 0)
+            const spent = Number(active.spent || 0)
+            if (!total) return null
+            const remaining = Math.max(0, total - spent)
+            const percent = `${Math.min(Math.max((spent / total) * 100, 0), 100)}%`
+            return {
+                label: `${formatMoney(active.currency || defaultCurrency.value, remaining)} left · ${active.name}`,
+                percent
+            }
+        })
+        const startEditBudget = (budget) => {
+            editingBudgetId.value = budget.id
+            budgetForm.value = {
+                name: budget.name || '',
+                amount: budget.amount || '',
+                currency: budget.currency || defaultCurrency.value || 'PHP',
+                startDate: budget.startDate ? budget.startDate.slice(0, 10) : todayStr(),
+                endDate: budget.endDate ? budget.endDate.slice(0, 10) : todayStr(),
+                categoryId: '',
+                alertEnabled: budget.alertEnabled ?? true,
+                alertThreshold: budget.alertThreshold ?? ''
+            }
+            showBudgetSheet.value = true
+        }
+
+        const handleDeleteBudget = async(budget) => {
+            const token = localStorage.getItem('token')
+            if (!token || !budget?.id) return
+            const ok = window.confirm('Delete this budget?')
+            if (!ok) return
+            try {
+                await deleteBudget(token, budget.id)
+                budgets.value = budgets.value.filter(b => b.id !== budget.id)
+            } catch (err) {
+                console.error(err)
+            }
         }
         const touchStartX = ref(0)
         const onMonthTouchStart = (e) => {
@@ -906,13 +1265,17 @@ export default {
                 type: 'DEFAULT'
             }
             expenseError.value = ''
+            editingExpenseId.value = null
         }
 
         const openExpenseSheet = () => {
             if (!categoriesLoaded.value) loadCategories()
+            if (!budgetsLoaded.value) loadBudgets()
             resetExpenseForm()
             showQuickActions.value = false
             showExpenseSheet.value = true
+            // Precompute budgets for default date
+            activeBudgetsForExpense.value
         }
 
         const closeExpenseSheet = () => {
@@ -945,16 +1308,31 @@ export default {
             }
             expenseSaving.value = true
             try {
-                await createExpense(token, {
-                    title: expenseForm.value.title.trim(),
-                    amount: Number(expenseForm.value.amount),
-                    currency: expenseForm.value.currency || defaultCurrency.value || 'PHP',
-                    categoryId: expenseForm.value.categoryId || null,
-                    expenseDate: expenseForm.value.expenseDate || new Date().toISOString(),
-                    paymentMethod: 'CASH',
-                    isRecurring: expenseForm.value.type === 'SUBSCRIPTION',
-                    frequency: expenseForm.value.type === 'SUBSCRIPTION' ? 'MONTHLY' : 'ONE_TIME'
-                })
+                if (editingExpenseId.value) {
+                    await updateExpense(token, editingExpenseId.value, {
+                        title: expenseForm.value.title.trim(),
+                        amount: Number(expenseForm.value.amount),
+                        currency: expenseForm.value.currency || defaultCurrency.value || 'PHP',
+                        categoryId: expenseForm.value.categoryId || null,
+                        expenseDate: expenseForm.value.expenseDate || new Date().toISOString(),
+                        paymentMethod: 'CASH',
+                        isRecurring: expenseForm.value.type === 'SUBSCRIPTION',
+                        frequency: expenseForm.value.type === 'SUBSCRIPTION' ? 'MONTHLY' : 'ONE_TIME',
+                        budgetId: expenseForm.value.budgetId || null
+                    })
+                } else {
+                    await createExpense(token, {
+                        title: expenseForm.value.title.trim(),
+                        amount: Number(expenseForm.value.amount),
+                        currency: expenseForm.value.currency || defaultCurrency.value || 'PHP',
+                        categoryId: expenseForm.value.categoryId || null,
+                        expenseDate: expenseForm.value.expenseDate || new Date().toISOString(),
+                        paymentMethod: 'CASH',
+                        isRecurring: expenseForm.value.type === 'SUBSCRIPTION',
+                        frequency: expenseForm.value.type === 'SUBSCRIPTION' ? 'MONTHLY' : 'ONE_TIME',
+                        budgetId: expenseForm.value.budgetId || null
+                    })
+                }
                 await loadExpenses()
                 await loadBudgets()
                 closeExpenseSheet()
@@ -973,6 +1351,10 @@ export default {
             const currency = active?.currency || defaultCurrency.value || 'PHP'
             return `${currencySymbol(currency)} ${active?.amount ?? 0}`
         })
+        const showDeleteConfirm = ref(false)
+        const deleteTarget = ref(null)
+        const deleteError = ref('')
+        const deleting = ref(false)
         const colorPalette = ref([
             '#ef4444', '#f97316', '#f59e0b', '#84cc16',
             '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9',
@@ -1089,7 +1471,14 @@ export default {
                 } catch {
                     list = await listBudgets(token)
                 }
-                budgets.value = Array.isArray(list) ? list : []
+                budgets.value = Array.isArray(list)
+                    ? list.map(b => ({
+                        ...b,
+                        spent: Number(b.spent || 0),
+                        amount: Number(b.amount || 0),
+                        currency: b.currency || defaultCurrency.value || 'PHP'
+                    }))
+                    : []
                 budgetsLoaded.value = true
             } catch (err) {
                 console.error(err)
@@ -1173,6 +1562,7 @@ export default {
                 alertThreshold: ''
             }
             budgetError.value = ''
+            editingBudgetId.value = null
         }
 
         const handleSaveBudget = async() => {
@@ -1192,7 +1582,7 @@ export default {
             }
             budgetSaving.value = true
             try {
-                const budget = await createBudget(token, {
+                const payload = {
                     name: budgetForm.value.name.trim(),
                     amount: Number(budgetForm.value.amount),
                     currency: defaultCurrency.value || 'PHP',
@@ -1201,8 +1591,14 @@ export default {
                     categoryId: null,
                     alertThreshold: budgetForm.value.alertThreshold ? Number(budgetForm.value.alertThreshold) : null,
                     alertEnabled: budgetForm.value.alertEnabled
-                })
-                budgets.value = [budget, ...budgets.value]
+                }
+                if (editingBudgetId.value) {
+                    const updated = await updateBudget(token, editingBudgetId.value, payload)
+                    budgets.value = budgets.value.map(b => b.id === updated.id ? updated : b)
+                } else {
+                    const budget = await createBudget(token, payload)
+                    budgets.value = [budget, ...budgets.value]
+                }
                 closeBudgetSheet()
             } catch (err) {
                 budgetError.value = err?.message || 'Unable to save budget.'
@@ -1239,13 +1635,16 @@ export default {
         const mapSubscriptionToCard = (sub) => {
             const next = sub.nextBillingDate || sub.nextBilling || sub.nextDate
             const autoPay = Boolean(sub.autoPay)
-            const palette = ['blue', 'amber', 'teal', 'purple', 'pink', 'green']
-            const colorIdx = Math.abs((sub.title || '').length) % palette.length
+            const cat = categories.value.find(c => c.id === sub.categoryId)
+            const iconBg = cat?.color || (autoPay ? '#d1fae5' : '#e0f2fe')
+            const iconColor = cat?.color ? '#fff' : (autoPay ? '#15803d' : '#0f172a')
             return {
                 id: sub.id,
                 when: next ? formatDate(next) : 'Upcoming',
                 tag: autoPay ? 'Auto-pay' : 'Reminder',
-                icon: 'calendar-refresh',
+                icon: cat?.icon || 'calendar-refresh',
+                iconBg,
+                iconColor,
                 badgeClass: autoPay ? 'green' : 'blue',
                 title: sub.title,
                 subtitle: `${sub.billingCycle || 'MONTHLY'} • ${(sub.currency || defaultCurrency.value)} ${sub.amount}`,
@@ -1255,7 +1654,9 @@ export default {
                 frequency: sub.billingCycle || 'MONTHLY',
                 autoPay,
                 categoryId: sub.categoryId || '',
-                dotClass: palette[colorIdx]
+                categoryIcon: cat?.icon,
+                categoryColor: cat?.color,
+                dotClass: null
             }
         }
 
@@ -1263,6 +1664,9 @@ export default {
             const token = localStorage.getItem('token')
             if (!token) return
             try {
+                if (!categoriesLoaded.value) {
+                    await loadCategories()
+                }
                 const list = await listSubscriptions(token)
                 schedules.value = Array.isArray(list) ? list.map(mapSubscriptionToCard) : []
             } catch (err) {
@@ -1272,11 +1676,14 @@ export default {
 
         const mapExpenseScheduleToCard = (sch) => {
             const when = sch.nextRunAt || sch.startDate
+            const cat = categories.value.find(c => c.id === sch.categoryId)
+            const iconBg = cat?.color || '#e0f2fe'
+            const iconColor = cat?.color ? '#fff' : '#0f172a'
             return {
                 id: sch.id,
                 when: when ? formatDate(when) : 'Planned',
                 tag: 'Reminder',
-                icon: 'cash-multiple',
+                icon: cat?.icon || 'cash-multiple',
                 badgeClass: 'blue',
                 title: sch.title,
                 subtitle: `${sch.frequency || 'ONE_TIME'} • ${(sch.currency || defaultCurrency.value)} ${sch.amount}`,
@@ -1285,7 +1692,11 @@ export default {
                 rawNextDate: sch.nextRunAt || sch.startDate,
                 frequency: sch.frequency || 'ONE_TIME',
                 autoPay: false,
-                categoryId: sch.categoryId || ''
+                categoryId: sch.categoryId || '',
+                categoryIcon: cat?.icon,
+                categoryColor: cat?.color,
+                iconBg,
+                iconColor
             }
         }
 
@@ -1293,6 +1704,9 @@ export default {
             const token = localStorage.getItem('token')
             if (!token) return
             try {
+                if (!categoriesLoaded.value) {
+                    await loadCategories()
+                }
                 const list = await listExpenseSchedules(token)
                 expenseSchedules.value = Array.isArray(list) ? list.map(mapExpenseScheduleToCard) : []
             } catch (err) {
@@ -1374,6 +1788,21 @@ export default {
             showScheduleSheet.value = true
         }
 
+        const startEditExpense = (exp) => {
+            editingExpenseId.value = exp.id
+            expenseForm.value = {
+                title: exp.title || '',
+                amount: exp.amount || '',
+                currency: exp.currency || defaultCurrency.value || 'PHP',
+                categoryId: exp.categoryId || '',
+                expenseDate: exp.expenseDate ? exp.expenseDate.slice(0, 10) : todayStr(),
+                type: exp.isRecurring ? 'SUBSCRIPTION' : 'DEFAULT',
+                budgetId: exp.budgetId || ''
+            }
+            expenseError.value = ''
+            showExpenseSheet.value = true
+        }
+
         const removeSchedule = async(item) => {
             const token = localStorage.getItem('token')
             if (!token || !item.id) return
@@ -1390,28 +1819,110 @@ export default {
             }
         }
 
-        const paySubscription = async(item) => {
+        const startPaySubscription = (item) => {
+            payTarget.value = item
+            payError.value = ''
+            showPayConfirm.value = true
+        }
+
+        const closePayConfirm = () => {
+            showPayConfirm.value = false
+            payTarget.value = null
+            paying.value = false
+            payError.value = ''
+        }
+
+        const paySubscription = async() => {
+            const item = payTarget.value
             const token = localStorage.getItem('token')
-            if (!token || !item.id) return
+            if (!token || !item?.id) return
+            payError.value = ''
+            paying.value = true
             try {
+                if (!categoriesLoaded.value) {
+                    await loadCategories()
+                }
                 const { expense, subscription } = await markSubscriptionPaid(token, item.id)
-                if (expense) expenses.value = [expense, ...expenses.value]
+                if (expense) expenses.value = [decorateExpense(expense), ...expenses.value]
                 schedules.value = schedules.value.filter(s => s.id !== item.id)
                 if (subscription) schedules.value = [mapSubscriptionToCard(subscription), ...schedules.value]
+                await loadExpenses()
+                await loadBudgets()
+                closePayConfirm()
+            } catch (err) {
+                console.error(err)
+                payError.value = err?.message || 'Unable to mark as paid.'
+            } finally {
+                paying.value = false
+            }
+        }
+
+        const handleDeleteExpense = async(exp) => {
+            const token = localStorage.getItem('token')
+            if (!token || !exp.id || exp.planned) return
+            try {
+                await deleteExpense(token, exp.id)
+                expenses.value = expenses.value.filter(e => e.id !== exp.id)
                 await loadBudgets()
             } catch (err) {
                 console.error(err)
             }
         }
 
-        const handleDeleteExpense = async(exp) => {
+        const startDeleteExpense = (exp) => {
+            deleteTarget.value = exp
+            deleteError.value = ''
+            showDeleteConfirm.value = true
+        }
+
+        const closeDeleteConfirm = () => {
+            showDeleteConfirm.value = false
+            deleteTarget.value = null
+            deleteError.value = ''
+            deleting.value = false
+        }
+
+        const confirmDeleteExpense = async() => {
+            const exp = deleteTarget.value
             const token = localStorage.getItem('token')
-            if (!token || !exp.id) return
+            if (!token || !exp?.id) return
+            deleteError.value = ''
+            deleting.value = true
             try {
                 await deleteExpense(token, exp.id)
                 expenses.value = expenses.value.filter(e => e.id !== exp.id)
+                await loadBudgets()
+                closeDeleteConfirm()
             } catch (err) {
                 console.error(err)
+                deleteError.value = err?.message || 'Unable to delete expense.'
+            } finally {
+                deleting.value = false
+            }
+        }
+
+        const handlePayPlanned = async(item) => {
+            if (item.type === 'subscription') {
+                const match = schedules.value.find(s => s.id === item.id.replace('subscription-', ''))
+                if (match) {
+                    startPaySubscription(match)
+                }
+                return
+            }
+            if (item.type === 'planned') {
+                const schedule = expenseSchedules.value.find(s => s.id === item.id.replace('planned-', ''))
+                if (!schedule) return
+                const token = localStorage.getItem('token')
+                if (!token) return
+                try {
+                    const result = await markExpenseSchedulePaid(token, schedule.id)
+                    if (result?.expense) expenses.value = [decorateExpense(result.expense), ...expenses.value]
+                    expenseSchedules.value = expenseSchedules.value.filter(s => s.id !== schedule.id)
+                    if (result?.schedule) expenseSchedules.value = [mapExpenseScheduleToCard(result.schedule), ...expenseSchedules.value]
+                    await loadBudgets()
+                } catch (err) {
+                    console.error(err)
+                }
             }
         }
 
@@ -1482,6 +1993,12 @@ export default {
                 loadSubscriptions()
                 loadExpenseSchedules()
             }
+            if (tab === 'profile' && !budgetsLoaded.value) {
+                loadBudgets()
+            }
+            if (tab === 'insights' && expenses.value.length === 0) {
+                loadExpenses()
+            }
         })
 
         watch(categories, (newCats) => {
@@ -1501,6 +2018,7 @@ export default {
                 loadCategories()
                 loadAccounts()
                 loadCurrencies()
+                loadBudgets()
             }
             if (activeTab.value === 'home') {
                 loadBudgets()
@@ -1541,9 +2059,12 @@ export default {
             budgets,
             totalBudget,
             activeBudgetAmount,
+            startEditBudget,
+            handleDeleteBudget,
             budgetCarousel,
             budgetActiveIndex,
             showBudgetSheet,
+            editingBudgetId,
             budgetForm,
             budgetError,
             budgetSaving,
@@ -1553,6 +2074,7 @@ export default {
             onBudgetScroll,
             scrollBudget,
             formatDate,
+            budgetProgress,
             showScheduleSheet,
             scheduleForm,
             scheduleError,
@@ -1570,6 +2092,20 @@ export default {
             transactionOut,
             transactionIn,
             transactionNet,
+            transactionsForMonth,
+            insightsTotal,
+            insightsCount,
+            insightsAvgPerDay,
+            insightsRangeLabel,
+            categoryBreakdown,
+            topCategory,
+            showDeleteConfirm,
+            deleteTarget,
+            deleteError,
+            deleting,
+            startDeleteExpense,
+            closeDeleteConfirm,
+            confirmDeleteExpense,
             monthLabel,
             todayLabel,
             startEditSchedule,
@@ -1580,6 +2116,7 @@ export default {
             closeQuickActions,
             expenses,
             loadExpenses,
+            activeBudgetsForExpense,
             showExpenseSheet,
             expenseForm,
             expenseSaving,
@@ -1595,8 +2132,17 @@ export default {
             displayedExpenses,
             monthOffset,
             viewMonthKey,
+            budgetSummaryPill,
+            showPayConfirm,
+            payTarget,
+            payError,
+            paying,
+            startPaySubscription,
+            closePayConfirm,
             paySubscription,
             handleDeleteExpense,
+            startEditExpense,
+            handlePayPlanned,
             formatMoney,
             currencySymbol
         }
@@ -1885,14 +2431,14 @@ export default {
     background: linear-gradient(135deg, #fee2e2, #fecdd3);
     color: #b91c1c;
     border: none;
-    box-shadow: 0 8px 18px rgba(185, 28, 28, 0.25);
+    box-shadow: 0 2px 4px rgba(185, 28, 28, 0.25);
 }
 
 .pill.tiny-pill.success {
     background: linear-gradient(135deg, #dcfce7, #bbf7d0);
     color: #166534;
     border: none;
-    box-shadow: 0 8px 18px rgba(22, 101, 52, 0.25);
+    box-shadow: 0 2px 4px rgba(22, 101, 52, 0.25);
 }
 
 .pill.tiny-pill.success mdicon {
@@ -1994,6 +2540,7 @@ export default {
 .icon-circle.purple-bg { background: #a855f7; color: #fff; }
 .icon-circle.blue-bg { background: #3b82f6; color: #fff; }
 .icon-circle.green-bg { background: #22c55e; color: #fff; }
+.icon-circle.red-bg { background: #ef4444; color: #fff; }
 
 .transactions-list .compact-item {
     padding: 10px;
@@ -2003,6 +2550,29 @@ export default {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.planned-pill {
+    margin-left: 6px;
+    font-weight: 700;
+}
+
+.item-amount.planned {
+    color: #475569;
+    font-weight: 600;
+}
+
+.inline-actions {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 8px;
+}
+
+.pay-pill {
+    margin-left: 8px;
+    background: #ecfdf3;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
 }
 
 .insights-cta {
@@ -2015,6 +2585,98 @@ export default {
     justify-content: space-between;
     gap: 12px;
     box-shadow: 0 8px 22px rgba(79, 70, 229, 0.1);
+}
+
+.insights-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 28px rgba(79, 70, 229, 0.25);
+}
+
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.insight-card {
+    padding: 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f8fafc, #eef2ff);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.05);
+}
+
+.insight-card.glow {
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    border: 1px solid #c7d2fe;
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18);
+}
+
+.insight-card.purple {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-color: #ddd6fe;
+}
+
+.insight-card.green {
+    background: linear-gradient(135deg, #ecfdf3, #dcfce7);
+    border-color: #bbf7d0;
+}
+
+.insight-block {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.category-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.cat-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.cat-main {
+    width: 100%;
+}
+
+.cat-percent {
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.progress.slim .bar {
+    height: 8px;
+}
+
+.budget-health {
+    display: grid;
+    gap: 10px;
+}
+
+.budget-health-card {
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
 .transactions-header .months {
@@ -2058,6 +2720,32 @@ export default {
 .summary-bar .flow.out { color: #e11d48; }
 .summary-bar .flow.in { color: #16a34a; }
 .summary-bar .flow.net { color: #0f172a; }
+
+.budget-pill {
+    display: grid;
+    grid-template-columns: 1fr 90px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+    box-shadow: 0 8px 18px rgba(79, 70, 229, 0.08);
+}
+
+.budget-pill-progress {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.budget-pill-progress .bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #22c55e, #4f46e5);
+}
 
 .month-slide-enter-active,
 .month-slide-leave-active {
@@ -2415,6 +3103,26 @@ export default {
     border: 1px solid #e2e8f0;
 }
 
+.budget-manage-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.manage-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.manage-actions {
+    gap: 6px;
+}
+
 .profile-card.danger {
     background: linear-gradient(135deg, #fff1f2, #ffe4e6);
     border: none;
@@ -2499,6 +3207,27 @@ export default {
     padding: 16px;
     box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.25);
     animation: slideUp 0.2s ease;
+}
+
+.confirm-sheet {
+    max-width: 420px;
+}
+
+.confirm-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    margin: 8px 0 12px;
+}
+
+.confirm-card .item-amount {
+    font-weight: 700;
+    color: #ef4444;
 }
 
 .sheet-head {
@@ -2589,8 +3318,14 @@ export default {
 
 .pill-option.active {
     border-color: #4f46e5;
-    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    background: linear-gradient(135deg, #ede9fe, #c7d2fe);
     color: #1e1b4b;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+.pill-option.compact {
+    padding: 6px 10px;
+    font-size: 13px;
 }
 
 .pill-option.add-pill {
@@ -2601,6 +3336,11 @@ export default {
 
 .pill-option mdicon {
     color: inherit;
+}
+
+.inline-cats {
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .inline {

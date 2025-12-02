@@ -23,6 +23,7 @@ import {
     createExpenseSchedule,
     updateExpenseSchedule,
     deleteExpenseSchedule,
+    markExpenseSchedulePaid,
     listSubscriptions,
     createSubscription,
     updateSubscription,
@@ -73,6 +74,7 @@ const makeExpenseRouter = (
     router.post('/schedules', authenticateUser, createExpenseSchedule)
     router.put('/schedules/:id', authenticateUser, updateExpenseSchedule)
     router.delete('/schedules/:id', authenticateUser, deleteExpenseSchedule)
+    router.post('/schedules/:id/pay', authenticateUser, markExpenseSchedulePaid)
 
     // Subscriptions
     router.get('/subscriptions', authenticateUser, listSubscriptions)

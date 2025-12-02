@@ -29,6 +29,22 @@ const normalizePaymentMethod = (value: unknown): PaymentMethod => {
     return PaymentMethod.CASH
 }
 
+const addInterval = (date: Date, freq: ExpenseFrequency) => {
+    const d = new Date(date)
+    switch (freq) {
+        case ExpenseFrequency.WEEKLY:
+            d.setDate(d.getDate() + 7)
+            return d
+        case ExpenseFrequency.YEARLY:
+            d.setFullYear(d.getFullYear() + 1)
+            return d
+        case ExpenseFrequency.MONTHLY:
+        default:
+            d.setMonth(d.getMonth() + 1)
+            return d
+    }
+}
+
 const parseStringArray = (value: unknown): string[] | null => {
     if (typeof value === 'undefined') return null
     if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean)
@@ -109,6 +125,7 @@ export const createExpense = async(req: ExtendedRequest, res: Response) => {
         location,
         receiptUrl,
         notes,
+        budgetId,
         isRecurring,
         frequency,
         recurringUntil
@@ -125,6 +142,13 @@ export const createExpense = async(req: ExtendedRequest, res: Response) => {
     }
 
     const expenseDateObj = expenseDate ? new Date(expenseDate) : new Date()
+    if (budgetId) {
+        const budget = await prisma.budget.findFirst({ where: { id: budgetId, userId: user.id } })
+        if (!budget) return res.status(404).json({ status: 404, message: 'Budget not found' })
+        if (budget.startDate > expenseDateObj || budget.endDate < expenseDateObj) {
+            return res.status(400).json({ status: 400, message: 'Expense date is outside the selected budget window' })
+        }
+    }
 
     const expense = await prisma.$transaction(async(tx) => {
         const created = await tx.expense.create({
@@ -150,7 +174,7 @@ export const createExpense = async(req: ExtendedRequest, res: Response) => {
             }
         })
 
-        const budgets = await resolveBudgetsForExpense(user.id, expenseDateObj, created.categoryId)
+        const budgets = await resolveBudgetsForExpense(user.id, expenseDateObj, created.categoryId, budgetId || undefined)
         if (budgets.length) {
             const updates = budgets.map(b => tx.budget.update({
                 where: { id: b.id },
@@ -231,6 +255,12 @@ export const deleteExpense = async(req: ExtendedRequest, res: Response) => {
 
     const existing = await prisma.expense.findFirst({ where: { id, userId: user.id } })
     if (!existing) return res.status(404).json({ status: 404, message: 'Expense not found' })
+
+    // Roll back budget spent when an expense is removed
+    const amount = Number(existing.amount || 0)
+    if (amount > 0) {
+        await decrementBudgetSpent(user.id, amount, existing.expenseDate, existing.categoryId)
+    }
 
     await prisma.expense.delete({ where: { id } })
     res.status(200).json({ status: 200, message: 'Expense deleted' })
@@ -640,6 +670,84 @@ export const deleteExpenseSchedule = async(req: ExtendedRequest, res: Response) 
     res.status(200).json({ status: 200, message: 'Schedule deleted' })
 }
 
+export const markExpenseSchedulePaid = async(req: ExtendedRequest, res: Response) => {
+    const user = ensureUser(req, res)
+    if (!user) return
+    const { id } = req.params
+    if (!id) return res.status(400).json({ status: 400, message: 'schedule id is required' })
+
+    const schedule = await prisma.expenseSchedule.findFirst({ where: { id, userId: user.id } })
+    if (!schedule) return res.status(404).json({ status: 404, message: 'Schedule not found' })
+
+    const expenseDate = schedule.nextRunAt || schedule.startDate || new Date()
+    const freq = schedule.frequency || ExpenseFrequency.ONE_TIME
+
+    const result = await prisma.$transaction(async(tx) => {
+        const expense = await tx.expense.create({
+            data: {
+                userId: user.id,
+                title: schedule.title,
+                amount: schedule.amount,
+                currency: schedule.currency,
+                expenseDate,
+                categoryId: null,
+                paymentMethod: PaymentMethod.CASH,
+                isRecurring: freq !== ExpenseFrequency.ONE_TIME,
+                frequency: freq,
+                notes: 'Scheduled expense paid'
+            }
+        })
+
+        // Update matching budgets within the transaction
+        const budgets = await tx.budget.findMany({
+            where: {
+                userId: user.id,
+                active: true,
+                startDate: { lte: expenseDate },
+                endDate: { gte: expenseDate },
+                OR: [
+                    { categoryId: undefined },
+                    { categoryId: null }
+                ]
+            }
+        })
+        if (budgets.length) {
+            await Promise.all(
+                budgets.map(b => tx.budget.update({
+                    where: { id: b.id },
+                    data: { spent: (b.spent || 0) + schedule.amount }
+                }))
+            )
+        }
+
+        await tx.expenseSchedule.delete({ where: { id: schedule.id } })
+
+        let nextSchedule = null
+        if (freq !== ExpenseFrequency.ONE_TIME) {
+            const next = addInterval(expenseDate, freq)
+            nextSchedule = await tx.expenseSchedule.create({
+                data: {
+                    userId: user.id,
+                    title: schedule.title,
+                    amount: schedule.amount,
+                    currency: schedule.currency,
+                    startDate: next,
+                    endDate: schedule.endDate,
+                    expenseId: null,
+                    frequency: freq,
+                    nextRunAt: next,
+                    lastRunAt: expenseDate,
+                    active: schedule.active
+                }
+            })
+        }
+
+        return { expense, schedule: nextSchedule }
+    })
+
+    res.status(201).json({ status: 201, expense: result.expense, schedule: result.schedule })
+}
+
 // Subscriptions
 export const listSubscriptions = async(req: ExtendedRequest, res: Response) => {
     const user = ensureUser(req, res)
@@ -773,23 +881,6 @@ export const deleteSubscription = async(req: ExtendedRequest, res: Response) => 
 
     await prisma.subscription.delete({ where: { id } })
     res.status(200).json({ status: 200, message: 'Subscription deleted' })
-}
-
-// Mark subscription paid -> create expense for current period
-const addInterval = (date: Date, freq: ExpenseFrequency) => {
-    const d = new Date(date)
-    switch (freq) {
-        case ExpenseFrequency.WEEKLY:
-            d.setDate(d.getDate() + 7)
-            return d
-        case ExpenseFrequency.YEARLY:
-            d.setFullYear(d.getFullYear() + 1)
-            return d
-        case ExpenseFrequency.MONTHLY:
-        default:
-            d.setMonth(d.getMonth() + 1)
-            return d
-    }
 }
 
 export const markSubscriptionPaid = async(req: ExtendedRequest, res: Response) => {
@@ -1032,7 +1123,13 @@ export const deleteCurrency = async(req: ExtendedRequest, res: Response) => {
     await prisma.userCurrency.delete({ where: { id } })
     res.status(200).json({ status: 200, message: 'Currency deleted' })
 }
-const resolveBudgetsForExpense = async(userId: string, expenseDate: Date, categoryId?: string | null) => {
+const resolveBudgetsForExpense = async(userId: string, expenseDate: Date, categoryId?: string | null, budgetId?: string) => {
+    if (budgetId) {
+        const budget = await prisma.budget.findFirst({ where: { id: budgetId, userId, active: true } })
+        if (!budget) return []
+        if (budget.startDate > expenseDate || budget.endDate < expenseDate) return []
+        return [budget]
+    }
     return prisma.budget.findMany({
         where: {
             userId,
@@ -1047,12 +1144,48 @@ const resolveBudgetsForExpense = async(userId: string, expenseDate: Date, catego
     })
 }
 
-const incrementBudgetSpent = async(userId: string, amount: number, expenseDate: Date, categoryId?: string | null) => {
-    const budgets = await resolveBudgetsForExpense(userId, expenseDate, categoryId)
-    if (!budgets.length) return
-    const updates = budgets.map(budget => prisma.budget.update({
-        where: { id: budget.id },
-        data: { spent: (budget.spent || 0) + amount }
-    }))
-    await prisma.$transaction(updates)
+function incrementBudgetSpent(userId: string, amount: number, expenseDate: Date, categoryId?: string | null) {
+    return prisma.$transaction(async tx => {
+        const budgets = await tx.budget.findMany({
+            where: {
+                userId,
+                active: true,
+                startDate: { lte: expenseDate },
+                endDate: { gte: expenseDate },
+                OR: [
+                    { categoryId: categoryId || undefined },
+                    { categoryId: null }
+                ]
+            }
+        })
+        if (!budgets.length) return
+        const updates = budgets.map(budget => tx.budget.update({
+            where: { id: budget.id },
+            data: { spent: (budget.spent || 0) + amount }
+        }))
+        await Promise.all(updates)
+    })
+}
+
+function decrementBudgetSpent(userId: string, amount: number, expenseDate: Date, categoryId?: string | null) {
+    return prisma.$transaction(async tx => {
+        const budgets = await tx.budget.findMany({
+            where: {
+                userId,
+                active: true,
+                startDate: { lte: expenseDate },
+                endDate: { gte: expenseDate },
+                OR: [
+                    { categoryId: categoryId || undefined },
+                    { categoryId: null }
+                ]
+            }
+        })
+        if (!budgets.length) return
+        const updates = budgets.map(budget => tx.budget.update({
+            where: { id: budget.id },
+            data: { spent: Math.max(0, (budget.spent || 0) - amount) }
+        }))
+        await Promise.all(updates)
+    })
 }

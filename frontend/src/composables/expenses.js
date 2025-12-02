@@ -47,6 +47,23 @@ export const useExpenses = () => {
         return true
     }
 
+    const updateExpense = async(token, id, payload) => {
+        if (!token) throw new Error('Missing auth token')
+        const res = await fetch(`${API_BASE_URL}/api/v1/expenses/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            throw new Error(data.message || 'Unable to update expense')
+        }
+        return data.expense
+    }
+
     const createCategory = async(token, payload) => {
         if (!token) throw new Error('Missing auth token')
         const res = await fetch(`${API_BASE_URL}/api/v1/expenses/categories`, {
@@ -81,6 +98,7 @@ export const useExpenses = () => {
     return {
         listExpenses,
         createExpense,
+        updateExpense,
         deleteExpense,
         createCategory,
         listCategories

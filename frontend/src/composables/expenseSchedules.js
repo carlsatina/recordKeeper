@@ -52,10 +52,22 @@ export const useExpenseSchedules = () => {
         return true
     }
 
+    const markExpenseSchedulePaid = async(token, id) => {
+        if (!token) throw new Error('Missing auth token')
+        const res = await fetch(`${API_BASE_URL}/api/v1/expenses/schedules/${id}/pay`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || 'Unable to mark schedule paid')
+        return data
+    }
+
     return {
         listExpenseSchedules,
         createExpenseSchedule,
         updateExpenseSchedule,
-        deleteExpenseSchedule
+        deleteExpenseSchedule,
+        markExpenseSchedulePaid
     }
 }

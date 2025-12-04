@@ -7,7 +7,7 @@ import medicalRecordsRouter from './src/routes/medicalRecords'
 import medicineReminderRouter from './src/routes/medicineReminders'
 import carMaintenanceRouter from './src/routes/carMaintenance'
 import expenseRouter from './src/routes/expense'
-import { PrismaClient} from '@prisma/client';
+import prisma from './lib/prisma'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { uploadLogo } from './src/middlewares/uploadLogo';
@@ -21,7 +21,7 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT;
 
-const dbClient = new PrismaClient()
+const dbClient = prisma
 
 app.use(cors())
 app.use(express.static('public'))

@@ -1,6 +1,8 @@
 <template>
 <div class="add-record-container">
-    <header class="app-bar">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <header class="app-bar glass-nav">
         <button class="icon-btn" @click="router.back()">
             <mdicon name="close" :size="22"/>
         </button>
@@ -10,7 +12,7 @@
         </button>
     </header>
 
-    <div class="card measurement-card">
+    <div class="card measurement-card glass-card">
         <div class="card-header">
             <div>
                 <p class="card-title">Blood Sugar</p>
@@ -43,7 +45,7 @@
         </div>
     </div>
 
-    <div class="card notes-card">
+    <div class="card notes-card glass-card">
         <div class="card-header">
             <div>
                 <p class="card-title">Notes</p>
@@ -59,7 +61,7 @@
         ></textarea>
     </div>
 
-    <div class="card datetime-card">
+    <div class="card datetime-card glass-card">
         <div class="card-header">
             <div>
                 <p class="card-title">Date & Time</p>
@@ -80,7 +82,7 @@
         </div>
     </div>
 
-    <button class="save-btn" @click="saveRecord">
+    <button class="save-btn glass-btn-primary" @click="saveRecord">
         Save
     </button>
 </div>
@@ -232,11 +234,36 @@ export default {
 <style scoped>
 .add-record-container {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #05060a;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 .app-bar {
@@ -244,117 +271,82 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 8px 0;
+    position: relative;
+    z-index: 1;
 }
 
 .screen-title {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .icon-btn {
-    border: none;
-    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
     width: 38px;
     height: 38px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #111;
+    color: #e2e8f0;
 }
 
 .icon-btn.ghost {
     background: transparent;
+    border-color: transparent;
 }
 
 .card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.08);
+    background: rgba(255,255,255,0.05);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    z-index: 1;
 }
 
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .card-title {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
+    color: #e2e8f0;
 }
 
 .card-subtitle {
     margin: 4px 0 0;
-    font-size: 13px;
-    color: #6b7280;
+    font-size: 12px;
+    color: #94a3b8;
 }
 
 .card-icon {
-    color: #667eea;
+    color: #67e8f9;
 }
 
 .notes-textarea {
     width: 100%;
     border-radius: 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255,255,255,0.12);
     padding: 16px;
     min-height: 120px;
     font-size: 14px;
     resize: vertical;
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
 }
 
 .sugar-inputs {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-}
-
-.status-pill {
-    margin-top: 12px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-weight: 600;
-    text-align: center;
-    font-size: 13px;
-}
-
-.status-normal {
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
-}
-
-.status-elevated {
-    background: rgba(251, 191, 36, 0.15);
-    color: #b45309;
-}
-
-.status-high {
-    background: rgba(239, 68, 68, 0.15);
-    color: #b91c1c;
-}
-
-select {
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 12px;
-    font-size: 15px;
-    background: #f8fafc;
-    color: #0f172a;
-}
-
-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-}
-
-.date-time-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 16px;
 }
 
@@ -366,46 +358,67 @@ select:focus {
 
 .input-block label {
     font-size: 13px;
-    font-weight: 600;
-    color: #475569;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
-.input-block input {
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+.input-block input,
+.input-block select {
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
     padding: 12px;
-    font-size: 15px;
-    color: #0f172a;
-    background: #f8fafc;
+    font-size: 14px;
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.05);
 }
 
-.input-block input:focus {
+.input-block input:focus,
+.input-block select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
+}
+
+.status-pill {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-align: center;
+    font-size: 13px;
+}
+
+.status-normal {
+    background: rgba(34, 197, 94, 0.16);
+    color: #22c55e;
+    border: 1px solid rgba(34,197,94,0.3);
+}
+
+.status-elevated {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.35);
+}
+
+.status-high {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.35);
+}
+
+.date-time-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
 }
 
 .save-btn {
     margin-top: auto;
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-    border: none;
-    border-radius: 16px;
-    color: white;
-    font-size: 17px;
-    font-weight: 600;
-    padding: 16px;
-    cursor: pointer;
-    box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3);
-}
-
-.save-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .profile-chip {
     margin: 0;
     font-size: 14px;
-    color: #6b7280;
+    color: #cbd5e1;
 }
 </style>

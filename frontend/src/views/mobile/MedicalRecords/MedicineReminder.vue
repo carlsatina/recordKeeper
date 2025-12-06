@@ -1,6 +1,8 @@
 <template>
 <div class="medicine-reminder-page">
-    <header class="header">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <header class="header glass-nav">
         <button class="icon-btn" @click="goBack">
             <mdicon name="arrow-left" :size="22"/>
         </button>
@@ -10,7 +12,7 @@
         </button>
     </header>
 
-    <div class="calendar-card">
+    <div class="calendar-card glass-card">
         <div class="month-row">
             <div class="month-controls">
                 <button class="month-nav" @click="previousMonth">
@@ -72,7 +74,7 @@
         <template v-else>
             <div v-if="formattedReminders.length" class="reminder-list">
                 <div 
-                    class="reminder-card"
+                    class="reminder-card glass-card"
                     v-for="reminder in formattedReminders"
                     :key="reminder.id"
                 >
@@ -122,7 +124,7 @@
     </section>
 
     <button 
-        class="primary-btn" 
+        class="primary-btn glass-btn-primary" 
         :disabled="!hasActiveProfile"
         @click="hasActiveProfile ? addReminder() : goToProfileTab()"
     >
@@ -414,51 +416,84 @@ export default {
 <style scoped>
 .medicine-reminder-page {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #05060a;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    background: white;
-    border-bottom: 1px solid #eef2ff;
+    padding: 14px 16px;
+    background: rgba(5,6,10,0.8);
+    border-bottom: 1px solid rgba(148,163,184,0.16);
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
 .icon-btn {
-    border: none;
-    background: transparent;
-    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    padding: 8px;
     border-radius: 12px;
+    color: #e2e8f0;
 }
 
-.icon-btn:active {
-    background: #f3f4f6;
+.icon-btn.ghost {
+    background: transparent;
+    border-color: transparent;
 }
 
 .title {
     margin: 0;
     font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .calendar-card {
-    background: white;
     margin: 16px;
     padding: 18px;
-    border-radius: 20px;
-    box-shadow: 0 20px 30px rgba(79, 70, 229, 0.08);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+    position: relative;
+    z-index: 1;
 }
 
 .month-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .month-controls {
@@ -468,9 +503,9 @@ export default {
 }
 
 .month-nav {
-    border: none;
-    background: rgba(79, 70, 229, 0.08);
-    color: #4f46e5;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
     width: 32px;
     height: 32px;
     border-radius: 10px;
@@ -483,12 +518,13 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
+    color: #e2e8f0;
     padding: 6px 12px;
     border-radius: 12px;
-    background: rgba(79, 70, 229, 0.08);
+    background: rgba(103,232,249,0.12);
+    border: 1px solid rgba(103,232,249,0.3);
 }
 
 .month-picker {
@@ -499,19 +535,19 @@ export default {
 }
 
 .month-option {
-    border: none;
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
     padding: 8px;
-    background: #f3f4f6;
+    background: rgba(255,255,255,0.05);
     font-size: 13px;
-    color: #1f2937;
+    color: #e2e8f0;
 }
 
 .history-btn {
     border: none;
     background: transparent;
-    color: #4f46e5;
-    font-weight: 600;
+    color: #67e8f9;
+    font-weight: 700;
 }
 
 .week-toolbar {
@@ -522,14 +558,14 @@ export default {
 }
 
 .week-label {
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .week-nav {
-    border: none;
-    background: rgba(79, 70, 229, 0.08);
-    color: #4f46e5;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
     width: 32px;
     height: 32px;
     border-radius: 10px;
@@ -548,10 +584,10 @@ export default {
     padding: 10px 4px;
     border-radius: 14px;
     text-align: center;
-    background: #f3f4f6;
-    color: #475569;
+    background: rgba(255,255,255,0.05);
+    color: #cbd5e1;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255,255,255,0.08);
     transition: all 0.2s ease;
     touch-action: manipulation;
 }
@@ -561,30 +597,33 @@ export default {
 }
 
 .day-pill.today {
-    border-color: rgba(79, 70, 229, 0.25);
-    background: rgba(79, 70, 229, 0.08);
+    border-color: rgba(103,232,249,0.4);
+    background: rgba(103,232,249,0.08);
 }
 
 .day-pill.active {
-    background: #4f46e5;
-    color: white;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    color: #0b1020;
     border-color: transparent;
+    box-shadow: 0 8px 20px rgba(168,85,247,0.35);
 }
 
 .day-name {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     margin-bottom: 4px;
 }
 
 .day-number {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .reminders-section {
     flex: 1;
-    padding: 0 16px 80px;
+    padding: 0 16px 90px;
+    position: relative;
+    z-index: 1;
 }
 
 .reminder-list {
@@ -594,13 +633,14 @@ export default {
 }
 
 .reminder-card {
-    background: white;
-    border-radius: 20px;
+    border-radius: 18px;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    box-shadow: 0 12px 24px rgba(17, 24, 39, 0.08);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.32);
 }
 
 .reminder-header {
@@ -620,29 +660,29 @@ export default {
 }
 
 .edit-btn {
-    border: none;
-    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
     border-radius: 10px;
-    padding: 4px;
-    color: #4f46e5;
+    padding: 6px;
+    color: #67e8f9;
 }
 
 .reminder-name {
     margin: 0;
     font-size: 16px;
-    font-weight: 600;
-    color: #111827;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .reminder-details {
     margin: 2px 0 0;
-    color: #6b7280;
-    font-size: 13px;
+    color: #94a3b8;
+    font-size: 12px;
 }
 
 .reminder-start {
     margin: 0;
-    color: #9ca3af;
+    color: #cbd5e1;
     font-size: 12px;
 }
 
@@ -653,12 +693,12 @@ export default {
 }
 
 .slot-pill {
-    border: none;
-    background: rgba(79, 70, 229, 0.08);
-    color: #4f46e5;
+    border: 1px solid rgba(103,232,249,0.35);
+    background: rgba(103,232,249,0.1);
+    color: #67e8f9;
     padding: 6px 12px;
     border-radius: 12px;
-    font-weight: 600;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -666,9 +706,10 @@ export default {
 }
 
 .slot-pill.checked {
-    background: #4f46e5;
-    color: white;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    color: #0b1020;
+    box-shadow: 0 8px 18px rgba(168,85,247,0.35);
+    border-color: transparent;
 }
 
 .slot-status {
@@ -683,7 +724,7 @@ export default {
 .empty-state {
     padding: 32px 16px;
     text-align: center;
-    color: #6b7280;
+    color: #94a3b8;
 }
 
 .empty-state.small {
@@ -704,8 +745,8 @@ export default {
     width: 70px;
     height: 100px;
     border-radius: 16px;
-    background: #c3d7ff;
-    box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #4f46e5, #06b6d4);
+    box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.08);
 }
 
 .pill-pack::before,
@@ -716,8 +757,8 @@ export default {
     width: 36px;
     height: 12px;
     border-radius: 999px;
-    background: white;
-    box-shadow: 0 24px white, 0 48px white, 0 72px white;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 24px rgba(255,255,255,0.9), 0 48px rgba(255,255,255,0.9), 0 72px rgba(255,255,255,0.9);
 }
 
 .bottle {
@@ -731,7 +772,7 @@ export default {
     width: 100%;
     height: 22px;
     border-radius: 10px 10px 4px 4px;
-    background: #7a85ff;
+    background: #67e8f9;
 }
 
 .body {
@@ -739,7 +780,7 @@ export default {
     width: 100%;
     height: 110px;
     border-radius: 18px;
-    background: #4c5df2;
+    background: linear-gradient(180deg, #0ea5e9, #6366f1);
     box-shadow: inset 0 -10px 0 rgba(0, 0, 0, 0.07);
     position: relative;
 }
@@ -752,7 +793,7 @@ export default {
     right: 14px;
     bottom: 18px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .pills {
@@ -775,24 +816,21 @@ export default {
 }
 
 .pill.blue {
-    background: linear-gradient(135deg, #a5b6ff, #7a85ff);
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
 }
 
 .message {
     font-size: 16px;
-    color: #1f2937;
+    color: #e2e8f0;
     margin: 0;
 }
 
 .primary-btn {
     margin: 0 16px 24px;
-    border: none;
     border-radius: 16px;
-    background: linear-gradient(135deg, #4c5df2, #7a85ff);
-    color: white;
     padding: 16px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .primary-btn:active {
@@ -805,12 +843,12 @@ export default {
 }
 
 .secondary-btn {
-    border: none;
-    background: rgba(79, 70, 229, 0.12);
-    color: #4f46e5;
+    border: 1px solid rgba(103,232,249,0.4);
+    background: rgba(103,232,249,0.12);
+    color: #67e8f9;
     border-radius: 999px;
     padding: 10px 20px;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 12px;
 }
 </style>

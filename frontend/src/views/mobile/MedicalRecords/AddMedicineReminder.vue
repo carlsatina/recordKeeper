@@ -1,6 +1,8 @@
 <template>
 <div class="add-medicine-page">
-    <header class="header">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <header class="header glass-nav">
         <button class="icon-btn" @click="goBack">
             <mdicon name="arrow-left" :size="22"/>
         </button>
@@ -9,7 +11,7 @@
     </header>
 
     <div class="content">
-        <section class="input-card">
+        <section class="input-card glass-card">
             <label class="input-label">Medicine Name</label>
             <input
                 type="text"
@@ -19,7 +21,7 @@
             />
         </section>
 
-        <section class="input-card">
+        <section class="input-card glass-card">
             <label class="input-label">Unit</label>
             <div class="select-field" @click="toggleUnit">
                 <span>{{ unit }}</span>
@@ -37,7 +39,7 @@
             </div>
         </section>
 
-        <section class="input-card">
+        <section class="input-card glass-card">
             <p class="section-label">Schedule</p>
             <div class="schedule-grid">
                 <div class="schedule-row select-row">
@@ -314,36 +316,66 @@ export default {
 <style scoped>
 .add-medicine-page {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #05060a;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    background: white;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 14px 16px;
+    background: rgba(5,6,10,0.8);
+    border-bottom: 1px solid rgba(148,163,184,0.16);
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
 .icon-btn {
-    border: none;
-    background: transparent;
-    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    padding: 8px;
     border-radius: 12px;
+    color: #e2e8f0;
 }
 
-.icon-btn:active {
-    background: #f3f4f6;
+.icon-btn.ghost {
+    background: transparent;
+    border-color: transparent;
 }
 
 .title {
     margin: 0;
     font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .spacer {
@@ -352,73 +384,82 @@ export default {
 
 .content {
     flex: 1;
-    padding: 20px 16px 40px;
+    padding: 18px 16px 36px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
 }
 
 .input-card {
-    background: white;
-    border-radius: 20px;
-    padding: 18px;
-    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.05);
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 26px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 .input-label {
     display: block;
     font-size: 13px;
-    color: #94a3b8;
+    color: #cbd5e1;
     margin-bottom: 8px;
+    font-weight: 700;
 }
 
 .input-field {
     width: 100%;
-    border: none;
-    border-radius: 16px;
-    padding: 14px;
-    background: #f5f6fb;
-    font-size: 16px;
-    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.05);
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
 }
 
 .select-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #f5f6fb;
-    padding: 14px;
-    border-radius: 16px;
-    font-size: 16px;
-    font-weight: 500;
+    background: rgba(255,255,255,0.05);
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
     cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #e2e8f0;
 }
 
 .option-list {
     margin-top: 8px;
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 .option-item {
     width: 100%;
     border: none;
-    background: white;
+    background: rgba(255,255,255,0.05);
     padding: 12px 16px;
     text-align: left;
-    font-size: 15px;
+    font-size: 14px;
+    color: #e2e8f0;
 }
 
 .option-item:active {
-    background: #eef2ff;
+    background: rgba(103,232,249,0.12);
 }
 
 .section-label {
     font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 10px;
 }
 
 .schedule-grid {
@@ -431,31 +472,29 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 15px;
-    font-weight: 500;
-    color: #0f172a;
+    font-size: 14px;
+    font-weight: 600;
+    color: #cbd5e1;
 }
 
 .dosage-value {
-    background: #eef2ff;
-    color: #4f46e5;
+    background: rgba(103,232,249,0.12);
+    color: #67e8f9;
     padding: 8px 12px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
     min-width: 60px;
     text-align: center;
+    border: 1px solid rgba(103,232,249,0.25);
 }
 
 .primary-btn {
     width: 100%;
-    border: none;
+    margin-top: auto;
     border-radius: 16px;
     padding: 16px;
     font-size: 16px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    color: white;
-    margin-top: auto;
+    font-weight: 700;
 }
 
 .primary-btn:active {
@@ -471,14 +510,14 @@ export default {
 .styled-select {
     width: 100%;
     position: relative;
-    background: #eef2ff;
+    background: rgba(255,255,255,0.05);
     border-radius: 12px;
-    border: 1px solid #dbe2ff;
+    border: 1px solid rgba(255,255,255,0.12);
     padding: 0 10px;
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: inset 0 1px 3px rgba(79, 70, 229, 0.08);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.12);
 }
 
 .styled-select select,
@@ -489,9 +528,9 @@ export default {
     background: transparent;
     padding: 10px 0;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     appearance: none;
-    color: #0f172a;
+    color: #e2e8f0;
 }
 
 .styled-select select:focus,
@@ -519,9 +558,9 @@ export default {
 }
 
 .remove-time {
-    border: none;
-    background: rgba(99, 102, 241, 0.15);
-    color: #4f46e5;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -532,13 +571,12 @@ export default {
 
 .add-time-btn {
     align-self: flex-start;
-    border: none;
-    background: rgba(79, 70, 229, 0.12);
-    color: #4f46e5;
+    border: 1px solid rgba(103,232,249,0.4);
+    background: rgba(103,232,249,0.12);
+    color: #67e8f9;
     border-radius: 999px;
     padding: 8px 16px;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 4px;
 }
-
 </style>

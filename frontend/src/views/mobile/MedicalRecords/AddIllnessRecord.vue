@@ -1,6 +1,8 @@
 <template>
 <div class="add-illness-container">
-    <div class="header">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="header glass-nav">
         <button class="back-btn" @click="goBack">
             <mdicon name="arrow-left" :size="22"/>
         </button>
@@ -8,7 +10,7 @@
         <span class="spacer"></span>
     </div>
 
-    <form class="form" @submit.prevent="submit">
+    <form class="form glass-card" @submit.prevent="submit">
         <label class="field">
             <span>Diagnosis *</span>
             <input v-model="form.diagnosis" type="text" placeholder="e.g., Influenza" required>
@@ -205,11 +207,36 @@ export default {
 <style scoped>
 .add-illness-container {
     min-height: 100vh;
-    background: #f8fafc;
+    background: #05060a;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 .header {
@@ -217,18 +244,21 @@ export default {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    position: relative;
+    z-index: 1;
+    padding: 8px 0;
 }
 
 .back-btn {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: none;
-    background: #eef2ff;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4338ca;
+    color: #e2e8f0;
 }
 
 h2 {
@@ -236,7 +266,8 @@ h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
-    color: #0f172a;
+    color: #e2e8f0;
+    text-align: center;
 }
 
 .spacer {
@@ -247,6 +278,13 @@ h2 {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
 }
 
 .field {
@@ -257,7 +295,8 @@ h2 {
 
 .field span {
     font-size: 13px;
-    color: #475569;
+    color: #cbd5e1;
+    font-weight: 700;
 }
 
 input,
@@ -266,16 +305,18 @@ select {
     width: 100%;
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    background: #fff;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
     font-size: 14px;
-    color: #0f172a;
+    color: #e2e8f0;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-    outline: 2px solid #c7d2fe;
+    outline: none;
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
 }
 
 .inline {
@@ -300,11 +341,12 @@ textarea {
     padding: 14px;
     border: none;
     border-radius: 14px;
-    background: linear-gradient(135deg, #7c3aed, #6366f1);
-    color: #fff;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    color: #0b1020;
     font-size: 15px;
-    font-weight: 700;
-    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
+    font-weight: 800;
+    box-shadow: 0 12px 24px rgba(168, 85, 247, 0.3);
+    border: 1px solid rgba(255,255,255,0.16);
 }
 
 .submit-btn:disabled {

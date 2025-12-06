@@ -1,6 +1,8 @@
 <template>
 <div class="add-record-container">
-    <header class="app-bar">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <header class="app-bar glass-nav">
         <button class="icon-btn" @click="router.back()">
             <mdicon name="close" :size="22"/>
         </button>
@@ -10,7 +12,7 @@
         </button>
     </header>
 
-    <div class="card measurement-card">
+    <div class="card measurement-card glass-card">
         <div class="card-header">
             <div>
                 <p class="card-title">Body Weight</p>
@@ -39,7 +41,7 @@
         </div>
     </div>
 
-    <div class="card datetime-card">
+    <div class="card datetime-card glass-card">
         <div class="card-header">
             <div>
                 <p class="card-title">Date & Time</p>
@@ -60,7 +62,7 @@
         </div>
     </div>
 
-    <button class="save-btn" @click="saveRecord">
+    <button class="save-btn glass-btn-primary" @click="saveRecord">
         Save
     </button>
 </div>
@@ -160,11 +162,36 @@ export default {
 <style scoped>
 .add-record-container {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #05060a;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 .app-bar {
@@ -172,64 +199,73 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 8px 0;
+    position: relative;
+    z-index: 1;
 }
 
 .screen-title {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .icon-btn {
-    border: none;
-    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
     width: 38px;
     height: 38px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #111;
+    color: #e2e8f0;
 }
 
 .icon-btn.ghost {
     background: transparent;
+    border-color: transparent;
 }
 
 .card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.08);
+    background: rgba(255,255,255,0.05);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    z-index: 1;
 }
 
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .card-title {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
+    color: #e2e8f0;
 }
 
 .card-subtitle {
     margin: 4px 0 0;
-    font-size: 13px;
-    color: #6b7280;
+    font-size: 12px;
+    color: #94a3b8;
 }
 
 .card-icon {
-    color: #667eea;
+    color: #67e8f9;
 }
 
 .weight-input {
-    background: #f1f5f9;
-    border-radius: 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
     padding: 12px 14px;
     margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .weight-input label {
@@ -250,9 +286,9 @@ export default {
 .weight-field input {
     border: none;
     background: transparent;
-    font-size: 24px;
-    font-weight: 600;
-    color: #0f172a;
+    font-size: 28px;
+    font-weight: 800;
+    color: #e2e8f0;
 }
 
 .weight-field input:focus {
@@ -260,8 +296,8 @@ export default {
 }
 
 .weight-field span {
-    font-weight: 600;
-    color: #94a3b8;
+    font-weight: 700;
+    color: #cbd5e1;
 }
 
 .input-block {
@@ -272,39 +308,39 @@ export default {
 
 .input-block label {
     font-size: 13px;
-    font-weight: 600;
-    color: #475569;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
 .input-block textarea {
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
     padding: 12px;
-    font-size: 15px;
-    color: #0f172a;
-    background: #f8fafc;
+    font-size: 14px;
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.05);
     min-height: 80px;
 }
 
 .input-block textarea:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
 }
 
 .input-block input {
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
     padding: 12px;
-    font-size: 15px;
-    color: #0f172a;
-    background: #f8fafc;
+    font-size: 14px;
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.05);
 }
 
 .input-block input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
 }
 
 .date-time-grid {
@@ -315,25 +351,11 @@ export default {
 
 .save-btn {
     margin-top: auto;
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-    border: none;
-    border-radius: 16px;
-    color: white;
-    font-size: 17px;
-    font-weight: 600;
-    padding: 16px;
-    cursor: pointer;
-    box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3);
-}
-
-.save-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .profile-chip {
     margin: 0;
     font-size: 14px;
-    color: #6b7280;
+    color: #cbd5e1;
 }
 </style>

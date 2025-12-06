@@ -1,9 +1,11 @@
 <template>
 <div class="add-record-container">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
     <!-- Header -->
-    <div class="header">
+    <div class="header glass-nav">
         <button class="close-btn" @click="goBack">
-            <mdicon name="close" :size="24"/>
+            <mdicon name="close" :size="22"/>
         </button>
         <h2 class="page-title">{{ headerTitle }}</h2>
     </div>
@@ -13,7 +15,7 @@
         <!-- Image Upload Section -->
         <div class="image-upload-section">
             <div 
-                class="image-preview existing" 
+                class="image-preview existing glass-card" 
                 v-for="file in existingFiles" 
                 :key="`existing-${file.id}`"
             >
@@ -27,7 +29,7 @@
                 </button>
             </div>
             <div 
-                class="image-preview" 
+                class="image-preview glass-card" 
                 v-for="(file, index) in selectedFiles" 
                 :key="file.id"
             >
@@ -42,7 +44,7 @@
             </div>
             <button 
                 type="button" 
-                class="add-image-card" 
+                class="add-image-card glass-card" 
                 @click="triggerFileUpload('device')"
                 :disabled="selectedFiles.length >= maxAttachments"
             >
@@ -51,7 +53,7 @@
             </button>
             <button 
                 type="button" 
-                class="add-image-card" 
+                class="add-image-card glass-card" 
                 @click="triggerFileUpload('camera')"
                 :disabled="selectedFiles.length >= maxAttachments"
             >
@@ -77,12 +79,12 @@
         </div>
 
         <!-- Form Fields -->
-        <div class="form-section">
+        <div class="form-section glass-card">
             <!-- Record For -->
             <div class="form-group">
                 <label class="form-label">Record for</label>
                 <div class="select-wrapper">
-                    <select v-model="recordFor" class="form-select">
+                    <select v-model="recordFor" class="form-select glass-select">
                         <option value="">Select family member</option>
                         <option 
                             v-for="member in profileMembers" 
@@ -103,7 +105,7 @@
                     type="text" 
                     v-model="fileName" 
                     placeholder="Add file name"
-                    class="form-input"
+                    class="form-input glass-input"
                 />
             </div>
 
@@ -114,7 +116,7 @@
                     type="text" 
                     v-model="providerName" 
                     placeholder="Add hospital or provider name"
-                    class="form-input"
+                    class="form-input glass-input"
                 />
             </div>
 
@@ -125,16 +127,16 @@
                     type="date" 
                     v-model="recordDate" 
                     placeholder="Add record date"
-                    class="form-input"
+                    class="form-input glass-input"
                 />
             </div>
 
             <!-- Type of Record -->
-            <div class="form-group">
+            <div class="form-group record-type-group">
                 <label class="form-label">Type of record</label>
                 <div class="record-types">
                     <div 
-                        class="record-type-card"
+                        class="record-type-card glass-card"
                         v-for="option in recordTypeOptions"
                         :key="option.id"
                         :class="{ active: recordType === option.id }"
@@ -153,7 +155,7 @@
                     type="text" 
                     v-model="tagsInput" 
                     placeholder="Separate tags with commas (e.g. scan, follow-up)"
-                    class="form-input"
+                    class="form-input glass-input"
                 />
             </div>
 
@@ -163,7 +165,7 @@
                 <textarea
                     v-model="notes"
                     rows="4"
-                    class="form-input"
+                    class="form-input glass-input"
                     placeholder="Add any helpful notes about this record"
                 ></textarea>
             </div>
@@ -172,7 +174,7 @@
         </div>
 
         <!-- Save Button -->
-        <button class="save-btn" @click="saveRecord" :disabled="saving">
+        <button class="save-btn glass-btn-primary" @click="saveRecord" :disabled="saving">
             {{ saving ? 'Saving...' : (isEditing ? 'Update record' : 'Save record') }}
         </button>
     </div>
@@ -452,54 +454,81 @@ export default {
 <style scoped>
 .add-record-container {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #05060a;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    filter: blur(60px);
+    opacity: 0.28;
+    z-index: 0;
+}
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    top: -140px;
+    left: -110px;
+}
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22c55e, #06b6d4);
+    bottom: -120px;
+    right: -90px;
 }
 
 /* Header */
 .header {
-    background: white;
-    padding: 16px 20px;
+    background: rgba(5,6,10,0.8);
+    padding: 14px 16px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    gap: 12px;
     position: sticky;
     top: 0;
     z-index: 10;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    padding: 4px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px;
     cursor: pointer;
-    color: #1a1a1a;
+    color: #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 12px;
     transition: all 0.2s ease;
 }
 
 .close-btn:active {
-    transform: scale(0.9);
-    background: #f3f4f6;
-    border-radius: 8px;
+    transform: scale(0.92);
+    background: rgba(255,255,255,0.12);
 }
 
 .page-title {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #e2e8f0;
     margin: 0;
 }
 
 /* Content */
 .content {
     flex: 1;
-    padding: 20px 16px;
-    padding-bottom: 40px;
+    padding: 18px 16px 32px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Image Upload Section */
@@ -507,15 +536,17 @@ export default {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    margin-bottom: 32px;
+    margin-bottom: 22px;
 }
 
 .image-preview {
-    background: white;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
     overflow: hidden;
     aspect-ratio: 1;
     position: relative;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
 }
 
 .image-preview img {
@@ -535,16 +566,16 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
+    background: rgba(11,16,32,0.8);
+    color: #e2e8f0;
     cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 .add-image-card {
-    border: none;
-    background: white;
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
+    border: 1px dashed rgba(103,232,249,0.45);
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
     aspect-ratio: 1;
     display: flex;
     flex-direction: column;
@@ -553,36 +584,42 @@ export default {
     gap: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #1a1a1a;
+    color: #e2e8f0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
 .add-image-card:active {
     transform: scale(0.98);
-    border-color: #667eea;
+    border-color: rgba(168,85,247,0.8);
 }
 
 .add-image-card:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 .plus-icon {
-    color: #9ca3af;
+    color: #94a3b8;
 }
 
 .add-image-card p {
     font-size: 13px;
-    color: #6b7280;
+    color: #cbd5e1;
     margin: 0;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Form Section */
 .form-section {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    margin-bottom: 32px;
+    gap: 18px;
+    margin-bottom: 26px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
 }
 
 .form-group {
@@ -592,29 +629,32 @@ export default {
 }
 
 .form-label {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
 }
 
-.form-input {
-    background: white;
-    border: 1px solid #e5e7eb;
+.form-input,
+.glass-input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
-    padding: 14px 16px;
-    font-size: 15px;
-    color: #1a1a1a;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: #e2e8f0;
     transition: all 0.2s ease;
 }
 
-.form-input::placeholder {
-    color: #9ca3af;
+.form-input::placeholder,
+.glass-input::placeholder {
+    color: #94a3b8;
 }
 
-.form-input:focus {
+.form-input:focus,
+.glass-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
 }
 
 /* Select Wrapper */
@@ -623,12 +663,12 @@ export default {
 }
 
 .form-select {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 12px;
-    padding: 14px 40px 14px 16px;
-    font-size: 15px;
-    color: #1a1a1a;
+    padding: 12px 38px 12px 14px;
+    font-size: 14px;
+    color: #e2e8f0;
     width: 100%;
     appearance: none;
     cursor: pointer;
@@ -636,21 +676,21 @@ export default {
 }
 
 .form-select option:first-child {
-    color: #9ca3af;
+    color: #94a3b8;
 }
 
 .form-select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: rgba(103,232,249,0.6);
+    box-shadow: 0 0 0 2px rgba(103,232,249,0.25);
 }
 
 .select-icon {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #6b7280;
+    color: #94a3b8;
     pointer-events: none;
 }
 
@@ -662,62 +702,45 @@ export default {
 }
 
 .record-type-card {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    padding: 16px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    color: #6b7280;
+    transition: all 0.25s ease;
+    color: #cbd5e1;
 }
 
 .record-type-card:active {
-    transform: scale(0.95);
+    transform: scale(0.97);
 }
 
 .record-type-card.active {
-    border-color: #667eea;
-    background: #f0f4ff;
-    color: #667eea;
+    border-color: rgba(103,232,249,0.5);
+    background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(168,85,247,0.2));
+    color: #0b1020;
+    box-shadow: 0 12px 24px rgba(168,85,247,0.25);
 }
 
 .record-type-card span {
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
     text-align: center;
 }
 
 /* Save Button */
 .save-btn {
     width: 100%;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.save-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.save-btn:active {
-    transform: scale(0.98);
-    background: #5568d3;
+    margin-top: 10px;
 }
 
 .form-error {
-    color: #dc2626;
-    font-size: 14px;
+    color: #f87171;
+    font-size: 13px;
     margin: 4px 0 0 0;
 }
 

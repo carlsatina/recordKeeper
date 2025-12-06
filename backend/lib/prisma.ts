@@ -16,6 +16,11 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not set in the environment')
 }
 
+const parseBoolean = (val: string | undefined, fallback: boolean) => {
+  if (val === undefined) return fallback
+  return ['1', 'true', 'yes', 'on'].includes(val.toLowerCase())
+}
+
 const readCaFromEnv = (): string | null => {
   const inlineCa = process.env.DB_SSL_CA
   if (inlineCa && inlineCa.trim().length > 0) {
@@ -33,9 +38,13 @@ const readCaFromEnv = (): string | null => {
 }
 
 const getSslConfig = () => {
+  const rejectUnauthorized = parseBoolean(process.env.DB_SSL_REJECT_UNAUTHORIZED, true)
+  const { hostname } = new URL(connectionString)
+  const servername = process.env.DB_SSL_SERVERNAME || hostname
+
   const caFromEnv = readCaFromEnv()
   if (caFromEnv) {
-    return { ca: caFromEnv, rejectUnauthorized: true }
+    return { ca: caFromEnv, rejectUnauthorized, servername }
   }
 
   const envCaPath = process.env.DB_SSL_CA_PATH
@@ -46,17 +55,17 @@ const getSslConfig = () => {
 
   if (fs.existsSync(chosenPath)) {
     const ca = fs.readFileSync(chosenPath, 'utf8')
-    return { ca, rejectUnauthorized: true }
+    return { ca, rejectUnauthorized, servername }
   }
 
-  // Development fallback: keep running without a CA, but do not allow this in production.
-  if (process.env.NODE_ENV === 'development') {
-    return { rejectUnauthorized: false }
+  // Development or explicit override fallback without CA.
+  if (process.env.NODE_ENV === 'development' || rejectUnauthorized === false) {
+    return { rejectUnauthorized: false, servername }
   }
 
   throw new Error(
     'DB_SSL_CA_PATH is required for secure TLS with your provider. ' +
-    'Set DB_SSL_CA_PATH to the root CA file path.'
+    'Set DB_SSL_CA_PATH (or DB_SSL_CA / DB_SSL_CA_B64) to the root CA file path.'
   )
 }
 

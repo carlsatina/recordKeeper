@@ -58,6 +58,9 @@ API_DOC_URL='http://localhost'
 # Option B: Inline the CA via env (PEM text or base64)
 # DB_SSL_CA="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n"
 # DB_SSL_CA_B64="BASE64ENCODEDPEM"
+# Optional overrides:
+# DB_SSL_SERVERNAME="your.db.host"        # if certificate CN doesn't match the host in DATABASE_URL
+# DB_SSL_REJECT_UNAUTHORIZED="false"      # only for dev/emergency; disables verification
 ```
 
 #### For `prisma`

@@ -1,10 +1,16 @@
 <template>
   <div class="page">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
     <header class="top">
-      <div>
-        <p class="eyebrow">Admin</p>
-        <h2>User approvals</h2>
-        <p class="sub">Review new registrations and set roles.</p>
+      <div class="hero-left">
+        <div class="logo-mark">UA</div>
+        <div>
+          <p class="eyebrow">Admin Control</p>
+          <h2>User approvals</h2>
+          <p class="sub">Review new registrations and set roles.</p>
+        </div>
       </div>
       <button class="ghost" @click="backToHome">
         <mdicon name="home" size="18" />
@@ -115,59 +121,108 @@ onMounted(() => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #f8fafc;
-  padding: 20px;
+  background: #05060a;
+  padding: 20px 16px 80px;
   display: grid;
   gap: 16px;
+  position: relative;
+  overflow: hidden;
+  color: #e2e8f0;
+}
+.bg-orb {
+  position: absolute;
+  filter: blur(50px);
+  opacity: 0.35;
+  z-index: 0;
+}
+.orb-1 {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  top: -90px;
+  left: -80px;
+}
+.orb-2 {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  bottom: -70px;
+  right: -60px;
 }
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
-  color: #64748b;
+  color: #a5b4fc;
   font-weight: 700;
   font-size: 12px;
 }
 h2 {
   margin: 2px 0;
   font-size: 20px;
+  color: #e2e8f0;
 }
 .sub {
   margin: 0;
-  color: #475569;
+  color: #cbd5e1;
   font-size: 13px;
 }
+.hero-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.logo-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  color: #0b1020;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 10px 24px rgba(6, 182, 212, 0.35);
+}
 .ghost {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
   display: inline-flex;
   gap: 6px;
   align-items: center;
   cursor: pointer;
   font-size: 14px;
+  backdrop-filter: blur(6px);
 }
 .stack {
   display: grid;
   gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 .cards {
   display: grid;
   gap: 12px;
 }
 .user-card {
-  background: #fff;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
   border-radius: 16px;
   padding: 14px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 18px 32px rgba(0,0,0,0.25);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   display: grid;
   gap: 10px;
 }
@@ -181,8 +236,8 @@ h2 {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #22c55e);
-  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  color: #0b1020;
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -192,16 +247,16 @@ h2 {
   margin: 0;
   font-weight: 700;
   font-size: 16px;
-  color: #0f172a;
+  color: #e2e8f0;
 }
 .meta {
   margin: 0;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 12px;
 }
 .email {
   margin: 0;
-  color: #0f172a;
+  color: #e2e8f0;
   font-size: 14px;
   word-break: break-word;
 }
@@ -212,7 +267,7 @@ h2 {
   border-radius: 999px;
   font-weight: 700;
   font-size: 11px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(226, 232, 240, 0.4);
   text-transform: uppercase;
 }
 .pill.guest { background: #fff7ed; color: #c2410c; }
@@ -224,15 +279,16 @@ h2 {
 }
 .label {
   font-size: 12px;
-  color: #475569;
+  color: #cbd5e1;
   font-weight: 700;
 }
 .select {
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.4);
   font-size: 14px;
-  background: #f8fafc;
+  background: rgba(255,255,255,0.04);
+  color: #e2e8f0;
 }
 .primary {
   padding: 12px;
@@ -244,10 +300,11 @@ h2 {
   cursor: pointer;
   font-size: 14px;
   width: 100%;
+  box-shadow: 0 12px 26px rgba(34, 197, 94, 0.25);
 }
 .hint {
   padding: 12px 0;
-  color: #475569;
+  color: #94a3b8;
   font-size: 13px;
 }
 .error-text {

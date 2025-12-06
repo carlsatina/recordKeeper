@@ -561,7 +561,7 @@
     </main>
 
     <div v-if="showExpenseSheet" class="overlay">
-        <div class="sheet">
+        <div class="sheet" ref="expenseSheetRef">
             <div class="sheet-head">
                 <div class="pill ghost">Add expense</div>
                 <button class="icon-btn ghost" @click="closeExpenseSheet">
@@ -666,7 +666,8 @@
                     <input type="date" v-model="expenseForm.expenseDate" />
                 </label>
                 <p v-if="expenseError" class="error-text">{{ expenseError }}</p>
-                <div class="actions">
+                <div ref="expenseActionsSentinel" class="actions-sentinel"></div>
+                <div class="actions gated" :class="{ visible: expenseActionsVisible }">
                     <button type="button" class="text-btn" @click="closeExpenseSheet">Cancel</button>
                     <button type="button" class="primary-btn solid" :disabled="expenseSaving" @click="handleSaveExpense">
                         {{ expenseSaving ? 'Saving...' : 'Save expense' }}
@@ -676,7 +677,7 @@
         </div>
     </div>
         <div v-if="showAddCategory" class="overlay">
-            <div class="sheet">
+            <div class="sheet" ref="categorySheetRef">
             <div class="sheet-head">
                 <div class="pill ghost">New category</div>
                 <button class="icon-btn ghost" @click="closeAddCategory">
@@ -729,7 +730,8 @@
                 </label>
                 <p v-if="saveError" class="error-text">{{ saveError }}</p>
                 <p v-if="saveMessage" class="success-text">{{ saveMessage }}</p>
-                <div class="actions">
+                <div ref="categoryActionsSentinel" class="actions-sentinel"></div>
+                <div class="actions gated" :class="{ visible: categoryActionsVisible }">
                     <button type="button" class="text-btn" @click="closeAddCategory">Cancel</button>
                     <button type="button" class="primary-btn solid" :disabled="saving" @click="handleSaveCategory">
                         {{ saving ? 'Saving...' : 'Save category' }}
@@ -1021,7 +1023,7 @@
 </template>
 
 <script>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
 import store from '@/store'
 import { useRouter, useRoute } from 'vue-router'
 import { useExpenses } from '@/composables/expenses'
@@ -1030,6 +1032,8 @@ import { useCurrencies } from '@/composables/currencies'
 import { useBudgets } from '@/composables/budgets'
 import { useSubscriptions } from '@/composables/subscriptions'
 import { useExpenseSchedules } from '@/composables/expenseSchedules'
+import getProfile from '@/composables/getProfile'
+import { Role } from '@/constants/enums'
 
 export default {
     name: "ExpenseTrackingMobile",
@@ -1053,6 +1057,9 @@ export default {
         const setTab = (tab) => { activeTab.value = tab }
         const barLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
         const showAddCategory = ref(false)
+        const categorySheetRef = ref(null)
+        const categoryActionsSentinel = ref(null)
+        const categoryActionsVisible = ref(false)
         const openAddCategory = () => { showAddCategory.value = true }
         const closeAddCategory = () => {
             showAddCategory.value = false
@@ -1081,6 +1088,10 @@ export default {
             }
             return 'U'
         })
+        const logout = () => {
+            store.methods.logoutUser()
+            router.push('/login')
+        }
         const budgets = ref([])
         const budgetsLoaded = ref(false)
         const showBudgetSheet = ref(false)
@@ -1105,6 +1116,9 @@ export default {
         const scheduleError = ref('')
         const showQuickActions = ref(false)
         const showExpenseSheet = ref(false)
+        const expenseSheetRef = ref(null)
+        const expenseActionsSentinel = ref(null)
+        const expenseActionsVisible = ref(false)
         const expenseSaving = ref(false)
         const expenseError = ref('')
         const expenseForm = ref({
@@ -1138,6 +1152,39 @@ export default {
         })
         const subscriptionTotal = computed(() => {
             return schedules.value.reduce((sum, s) => sum + Number(s.rawAmount || 0), 0)
+        })
+
+        const observerMap = new Map()
+        const setupGatedActions = (openRef, sheetRef, sentinelRef, visibleRef) => {
+            watch(openRef, async (open) => {
+                const existing = observerMap.get(visibleRef)
+                if (existing) {
+                    existing.disconnect()
+                    observerMap.delete(visibleRef)
+                }
+                visibleRef.value = false
+                if (!open) return
+                await nextTick()
+                const root = sheetRef.value
+                const target = sentinelRef.value
+                if (!root || !target) return
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        visibleRef.value = entries.some(entry => entry.isIntersecting)
+                    },
+                    { root, threshold: 1.0 }
+                )
+                observer.observe(target)
+                observerMap.set(visibleRef, observer)
+            })
+        }
+
+        setupGatedActions(showExpenseSheet, expenseSheetRef, expenseActionsSentinel, expenseActionsVisible)
+        setupGatedActions(showAddCategory, categorySheetRef, categoryActionsSentinel, categoryActionsVisible)
+
+        onBeforeUnmount(() => {
+            observerMap.forEach((obs) => obs.disconnect())
+            observerMap.clear()
         })
         const monthOffset = ref(0)
         const viewMonthStart = computed(() => {
@@ -2320,6 +2367,9 @@ export default {
             loadExpenses,
             activeBudgetsForExpense,
             showExpenseSheet,
+            expenseSheetRef,
+            expenseActionsSentinel,
+            expenseActionsVisible,
             expenseForm,
             expenseSaving,
             expenseError,
@@ -2352,7 +2402,10 @@ export default {
             currencySymbol,
             userName,
             userEmail,
-            userInitials
+            userInitials,
+            categorySheetRef,
+            categoryActionsSentinel,
+            categoryActionsVisible
         }
     }
 }
@@ -3460,18 +3513,24 @@ export default {
     backdrop-filter: blur(10px);
     display: grid;
     place-items: end center;
+    align-items: end;
     padding: 0 12px 16px;
     z-index: 20;
+    overflow-y: auto;
 }
 
 .sheet {
     width: 100%;
     max-width: 480px;
+    max-height: calc(100vh - 32px);
     background: #fff;
     border-radius: 18px 18px 0 0;
     padding: 16px;
     box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.25);
     animation: slideUp 0.2s ease;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .confirm-sheet {
@@ -3529,6 +3588,7 @@ export default {
     display: grid;
     gap: 12px;
     margin-top: 10px;
+    padding-bottom: 12px;
 }
 
 .field {
@@ -3698,6 +3758,28 @@ export default {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 6px;
+}
+
+.actions.gated {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.65) 0%, #fff 45%);
+    padding-top: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.actions.gated.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.actions-sentinel {
+    height: 16px;
+    width: 100%;
 }
 
 .primary-btn.solid {

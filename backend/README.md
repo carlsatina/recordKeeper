@@ -61,6 +61,7 @@ API_DOC_URL='http://localhost'
 # Optional overrides:
 # DB_SSL_SERVERNAME="your.db.host"        # if certificate CN doesn't match the host in DATABASE_URL
 # DB_SSL_REJECT_UNAUTHORIZED="false"      # only for dev/emergency; disables verification
+# DB_SSL_DISABLE="true"                    # disable TLS entirely (e.g., local Postgres without SSL)
 ```
 
 #### For `prisma`

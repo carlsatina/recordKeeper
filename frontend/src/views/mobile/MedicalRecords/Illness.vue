@@ -1,7 +1,9 @@
 <template>
 <div class="illness-container">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
     <!-- Header -->
-    <div class="header">
+    <div class="header glass-nav">
         <button class="back-btn" @click="goBack">
             <mdicon name="arrow-left" :size="24"/>
         </button>
@@ -15,7 +17,7 @@
     </div>
 
     <!-- Chart Card -->
-    <div class="chart-card">
+    <div class="chart-card glass-card">
         <div class="chart-header">
             <div class="chart-title">
                 <span class="chart-label">Body temperature</span>
@@ -72,7 +74,7 @@
     <!-- Records List -->
     <div class="records-list">
         <div 
-            class="record-item" 
+            class="record-item glass-card" 
             v-for="record in illnessList" 
             :key="record.id"
             @click="openRecord(record.id)"
@@ -101,7 +103,7 @@
     </div>
 
     <!-- Add New Record Button -->
-    <button class="add-record-btn" @click="goToAddIllness">
+    <button class="add-record-btn glass-btn-primary" @click="goToAddIllness">
         Add illness record
     </button>
 </div>
@@ -271,265 +273,40 @@ export default {
 </script>
 
 <style scoped>
-.illness-container {
-    min-height: 100vh;
-    background: #f8fafc;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.back-btn,
-.menu-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    border: none;
-    background: #eef2ff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #4338ca;
-}
-
-.title-block {
-    flex: 1;
-    padding: 0 12px;
-}
-
-.page-title {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 700;
-    color: #0f172a;
-}
-
-.profile-subtitle {
-    margin: 2px 0 0;
-    color: #475569;
-    font-size: 13px;
-}
-
-.chart-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
-
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.chart-title {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.chart-label {
-    font-size: 14px;
-    color: #475569;
-}
-
-.chart-latest {
-    font-size: 18px;
-    font-weight: 700;
-    color: #111827;
-}
-
-.chart-date {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.chart-container {
-    display: flex;
-    gap: 10px;
-    position: relative;
-}
-
-.chart-y-axis {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #94a3b8;
-    min-width: 32px;
-}
-
-.chart-area {
-    flex: 1;
-}
-
-.line-chart {
-    width: 100%;
-    height: 120px;
-}
-
-.chart-x-labels {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 6px;
-    font-size: 11px;
-    color: #94a3b8;
-}
-
-.chart-unit {
-    position: absolute;
-    top: 0;
-    right: 0;
-    font-size: 11px;
-    color: #94a3b8;
-}
-
-.chart-placeholder {
-    text-align: center;
-    padding: 24px 0;
-    color: #94a3b8;
-    font-size: 14px;
-}
-
-.records-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.record-item {
-    background: #fff;
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.record-main {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.record-diagnosis {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-}
-
-.record-date {
-    margin: 2px 0 0;
-    font-size: 12px;
-    color: #64748b;
-}
-
-.badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: capitalize;
-}
-
-.badge.subtle {
-    background: #f3f4f6;
-    color: #374151;
-    font-weight: 600;
-}
-
-.badge.ongoing,
-.badge.chronic {
-    background: #fff7ed;
-    color: #ea580c;
-}
-
-.badge.recovered,
-.badge.resolved {
-    background: #ecfdf3;
-    color: #16a34a;
-}
-
-.badge.severe,
-.badge.critical {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.record-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.symptom-chip {
-    background: #eef2ff;
-    color: #4338ca;
-    border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.empty-state {
-    background: #fff;
-    border-radius: 14px;
-    padding: 24px;
-    text-align: center;
-    color: #475569;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-}
-
-.empty-icon {
-    color: #cbd5e1;
-    margin-bottom: 8px;
-}
-
-.empty-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.empty-text {
-    margin: 4px 0 0;
-    font-size: 13px;
-    color: #64748b;
-}
-
-.add-record-btn {
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #7c3aed, #6366f1);
-    color: #fff;
-    border: none;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 700;
-    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
-    margin-top: 4px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.illness-container {
-    position: relative;
-    padding-bottom: 24px;
-}
+.illness-container { min-height: 100vh; background: #05060a; position: relative; overflow: hidden; padding-bottom: 100px; }
+.bg-orb { position: absolute; filter: blur(60px); opacity: 0.28; z-index: 0; }
+.orb-1 { width: 320px; height: 320px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #a855f7); top: -140px; left: -110px; }
+.orb-2 { width: 260px; height: 260px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #06b6d4); bottom: -120px; right: -90px; }
+.header { background: rgba(5,6,10,0.8); padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(148,163,184,0.16); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px); }
+.title-block { flex: 1; }
+.profile-subtitle { margin: 0; font-size: 12px; color: #94a3b8; }
+.back-btn, .menu-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); padding: 8px; cursor: pointer; color: #e2e8f0; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; border-radius: 12px; }
+.back-btn:active, .menu-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+.page-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin: 0; }
+.chart-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; margin: 16px; box-shadow: 0 14px 30px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 1; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #e2e8f0; }
+.chart-label { font-size: 13px; color: #cbd5e1; }
+.chart-latest { font-weight: 800; font-size: 18px; color: #67e8f9; }
+.chart-date { font-size: 12px; color: #94a3b8; }
+.chart-container { position: relative; display: flex; gap: 8px; }
+.chart-y-axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: #94a3b8; padding: 10px 0; min-width: 30px; }
+.chart-area { flex: 1; position: relative; }
+.line-chart { width: 100%; height: 120px; }
+.chart-x-labels { display: flex; justify-content: space-around; margin-top: 8px; color: #94a3b8; font-size: 11px; }
+.chart-unit { position: absolute; top: 0; right: 0; font-size: 11px; color: #94a3b8; }
+.chart-placeholder { padding: 30px 12px; text-align: center; color: #94a3b8; }
+.records-list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
+.record-item { padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); box-shadow: 0 10px 24px rgba(0,0,0,0.28); display: flex; flex-direction: column; gap: 8px; }
+.record-main { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.record-diagnosis { margin: 0; font-size: 15px; font-weight: 800; color: #e2e8f0; }
+.record-date { margin: 0; font-size: 12px; color: #94a3b8; }
+.badge { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0; }
+.badge.subtle { background: rgba(255,255,255,0.06); color: #cbd5e1; }
+.record-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.symptom-chip { background: rgba(103,232,249,0.12); color: #67e8f9; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; border: 1px solid rgba(103,232,249,0.3); }
+.empty-state { padding: 32px 16px; text-align: center; color: #cbd5e1; }
+.empty-icon { color: #94a3b8; }
+.empty-title { font-size: 18px; font-weight: 700; color: #e2e8f0; margin: 0 0 6px 0; }
+.empty-text { font-size: 13px; color: #94a3b8; margin: 0; }
+.add-record-btn { position: fixed; bottom: 20px; left: 16px; right: 16px; border: none; padding: 16px; font-size: 16px; font-weight: 700; }
 </style>

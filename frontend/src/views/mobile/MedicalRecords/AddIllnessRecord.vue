@@ -71,7 +71,29 @@
         <button class="submit-btn" type="submit" :disabled="submitting">
             {{ submitting ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Record' : 'Save Record') }}
         </button>
+        <button 
+            v-if="isEdit" 
+            type="button" 
+            class="submit-btn ghost danger" 
+            @click="openDeleteConfirm" 
+            :disabled="submitting"
+        >
+            Delete Record
+        </button>
     </form>
+
+    <div v-if="showDeleteConfirm" class="confirm-overlay">
+        <div class="confirm-card">
+            <h3 class="confirm-title">Delete illness record?</h3>
+            <p class="confirm-text">This action permanently removes the record.</p>
+            <div class="confirm-actions">
+                <button type="button" @click="showDeleteConfirm = false" :disabled="submitting">Cancel</button>
+                <button type="button" class="danger" @click="confirmDelete" :disabled="submitting">
+                    {{ submitting ? 'Deleting...' : 'Delete' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
@@ -85,11 +107,12 @@ export default {
     setup() {
         const router = useRouter()
         const route = useRoute()
-        const { addRecord, fetchRecordById, updateRecord } = useIllness()
+        const { addRecord, fetchRecordById, updateRecord, deleteRecord } = useIllness()
         const submitting = ref(false)
         const loading = ref(false)
         const recordId = ref(route.params.id)
         const isEdit = ref(Boolean(recordId.value))
+        const showDeleteConfirm = ref(false)
 
         const profileIdFromQuery = Array.isArray(route.query.profileId) ? route.query.profileId[0] : route.query.profileId
         const formatDateTimeLocal = (value) => {
@@ -186,6 +209,27 @@ export default {
             }
         }
 
+        const openDeleteConfirm = () => {
+            if (!isEdit.value || !recordId.value) return
+            showDeleteConfirm.value = true
+        }
+
+        const confirmDelete = async() => {
+            if (!isEdit.value || !recordId.value) return
+            const token = localStorage.getItem('token')
+            if (!token) return
+            submitting.value = true
+            try {
+                await deleteRecord(token, recordId.value)
+                router.push('/medical-records/illness')
+            } catch (err) {
+                alert(err.message || 'Failed to delete illness record')
+            } finally {
+                submitting.value = false
+                showDeleteConfirm.value = false
+            }
+        }
+
         onMounted(() => {
             loadExisting()
         })
@@ -198,7 +242,10 @@ export default {
             goBack,
             submit,
             isEdit,
-            loading
+            loading,
+            showDeleteConfirm,
+            openDeleteConfirm,
+            confirmDelete
         }
     }
 }
@@ -351,5 +398,75 @@ textarea {
 
 .submit-btn:disabled {
     opacity: 0.7;
+}
+
+.submit-btn.ghost {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #e2e8f0;
+}
+
+.submit-btn.danger {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    color: #0b1020;
+    border: none;
+}
+
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 6, 10, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1100;
+}
+
+.confirm-card {
+    background: rgba(10, 12, 20, 0.95);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 18px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 18px 36px rgba(0,0,0,0.4);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.confirm-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.confirm-text {
+    margin: 0;
+    font-size: 14px;
+    color: #cbd5e1;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
+}
+
+.confirm-actions .danger {
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    border: none;
+    color: #0b1020;
 }
 </style>

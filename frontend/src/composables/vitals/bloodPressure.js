@@ -77,6 +77,20 @@ export const useBloodPressure = () => {
         return data.record
     }
 
+    const deleteRecord = async(token, recordId) => {
+        const res = await fetch(`${API_BASE_URL}/api/v1/vitals/blood-pressure/${recordId}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data.message || 'Unable to delete blood pressure record')
+        }
+        return true
+    }
+
     return {
         records,
         loading,
@@ -84,6 +98,7 @@ export const useBloodPressure = () => {
         fetchRecords,
         addRecord,
         updateRecord,
-        fetchRecordById
+        fetchRecordById,
+        deleteRecord
     }
 }

@@ -77,6 +77,20 @@ export const useBodyWeight = () => {
         return data.record
     }
 
+    const deleteRecord = async(token, recordId) => {
+        const res = await fetch(`${API_BASE_URL}/api/v1/vitals/body-weight/${recordId}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data.message || 'Unable to delete body weight record')
+        }
+        return true
+    }
+
     return {
         records,
         loading,
@@ -84,6 +98,7 @@ export const useBodyWeight = () => {
         fetchRecords,
         addRecord,
         updateRecord,
-        fetchRecordById
+        fetchRecordById,
+        deleteRecord
     }
 }

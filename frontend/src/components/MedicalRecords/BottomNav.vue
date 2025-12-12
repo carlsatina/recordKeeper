@@ -76,7 +76,7 @@ export default {
     padding: 10px 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     flex: 1;
     max-width: 100px;
     border-radius: 12px;
@@ -88,10 +88,14 @@ export default {
 }
 
 .nav-item.active {
-    color: #0b1020;
+    color: var(--text-primary);
     background: linear-gradient(135deg, var(--accent-2), var(--accent-4));
     border-color: rgba(255,255,255,0.18);
     box-shadow: 0 10px 30px rgba(168, 85, 247, 0.35);
+}
+
+.nav-item :deep(svg) {
+    color: inherit;
 }
 
 .nav-label {

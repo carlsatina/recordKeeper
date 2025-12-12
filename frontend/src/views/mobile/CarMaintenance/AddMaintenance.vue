@@ -106,6 +106,14 @@
         <button class="car-btn" type="submit" :disabled="submitting">
             {{ submitting ? 'Saving...' : 'Save Maintenance' }}
         </button>
+        <button 
+            v-if="isEditing" 
+            class="car-btn ghost" 
+            type="button" 
+            @click="cancelEdit"
+        >
+            Cancel
+        </button>
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
         <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     </form>
@@ -122,7 +130,7 @@ export default {
     setup() {
         const router = useRouter()
         const route = useRoute()
-        const { createMaintenanceRecord, listVehicles, getMaintenanceRecord, getPreferences } = useCarMaintenance()
+        const { createMaintenanceRecord, updateMaintenanceRecord, listVehicles, getMaintenanceRecord, getPreferences } = useCarMaintenance()
 
         const vehicles = ref([])
         const isEditing = ref(false)
@@ -178,7 +186,13 @@ export default {
 
         const distanceUnitLabel = computed(() => distanceUnit.value === 'mi' ? 'miles' : 'km')
 
-        const goBack = () => router.push('/')
+        const goBack = () => {
+            if (window.history.length > 1) {
+                router.back()
+            } else {
+                router.push('/car-maintenance')
+            }
+        }
 
         const loadVehicles = async() => {
             try {
@@ -236,7 +250,7 @@ export default {
                 const token = localStorage.getItem('token')
                 if (!token) throw new Error('You must be logged in.')
                 if (isEditing.value && editingId.value) {
-                    await createMaintenanceRecord(token, { ...payload.value, id: editingId.value })
+                    await updateMaintenanceRecord(token, editingId.value, payload.value)
                     successMessage.value = 'Maintenance updated'
                 } else {
                     await createMaintenanceRecord(token, payload.value)
@@ -255,6 +269,14 @@ export default {
         const selectType = (option) => {
             form.value.maintenanceType = option
             showTypeList.value = false
+        }
+
+        const cancelEdit = () => {
+            if (isEditing.value && editingId.value) {
+                router.push(`/car-maintenance/maintenance/${editingId.value}`)
+            } else {
+                router.push('/car-maintenance')
+            }
         }
 
         const displayName = (vehicle) => {
@@ -317,7 +339,8 @@ export default {
             selectType,
             distanceUnit,
             distanceUnitLabel,
-            currencyOptions
+            currencyOptions,
+            cancelEdit
         }
     }
 }

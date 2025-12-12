@@ -3,14 +3,14 @@
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
-        <span class="car-icon-btn ghost"></span>
+        <button class="car-icon-btn" @click="goBack">
+            <mdicon name="arrow-left" :size="22"/>
+        </button>
         <div>
             <h2 class="car-hero-title">Maintenance Detail</h2>
             <p class="car-hero-sub">Service record overview</p>
         </div>
-        <button class="car-icon-btn" @click="goBack">
-            <mdicon name="home" :size="22"/>
-        </button>
+        <span class="car-icon-btn ghost"></span>
         <button class="car-icon-btn" @click="editRecord">
             <mdicon name="pencil" :size="20"/>
         </button>
@@ -154,7 +154,13 @@ export default {
             }
         }
 
-        const goBack = () => router.push('/')
+        const goBack = () => {
+            if (window.history.length > 1) {
+                router.back()
+            } else {
+                router.push('/car-maintenance')
+            }
+        }
         const editRecord = () => {
             if (!record.value) return
             router.push({ path: '/car-maintenance/maintenance/add', query: { edit: 'true', id: record.value.id, vehicleId: record.value.vehicleId } })

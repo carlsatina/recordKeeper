@@ -17,7 +17,13 @@
                 </button>
             </div>
         </div>
-        <h2 class="text-center mt-4 mb-3">Record Keeper</h2>
+        <div class="logo-block">
+            <img src="@/assets/MECLogger.png" alt="MEC Logger Logo" />
+            <div>
+                <h2 class="text-center mt-4 mb-1">MEC Logger</h2>
+                <p class="text-center text-muted mb-3">Record Keeper</p>
+            </div>
+        </div>
         <p class="text-center text-muted">Choose a feature to get started</p>
     </div>
 
@@ -201,6 +207,20 @@ export default {
 
 .header {
     margin-bottom: 40px;
+}
+
+.logo-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.logo-block img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
 }
 
 .header p {

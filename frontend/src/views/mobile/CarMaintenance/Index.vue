@@ -3,12 +3,14 @@
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
-        <span class="car-icon-btn ghost"></span>
+        <button class="car-icon-btn" @click="goBack">
+            <mdicon name="arrow-left" :size="22"/>
+        </button>
         <div>
             <h2 class="car-hero-title">Vehicle Logs</h2>
             <p class="car-hero-sub">Maintenance, costs, and history</p>
         </div>
-        <button class="car-icon-btn" @click="goBack">
+        <button class="car-icon-btn" @click="goHome">
             <mdicon name="home" :size="24"/>
         </button>
     </div>
@@ -67,8 +69,8 @@
             v-else
             class="history-card car-card"
             v-for="item in maintenanceRecords"
-            :key="item.id"
-            @click="openRecordDetail(item.id)"
+            :key="item.id || item._id"
+            @click="openRecordDetail(item)"
         >
             <div class="history-top">
                 <p class="history-title">{{ item.maintenanceType || item.title }}</p>
@@ -161,7 +163,11 @@ export default {
         })
 
         const goBack = () => {
-            router.push('/')
+            if (window.history.length > 1) {
+                router.back()
+            } else {
+                router.push('/car-maintenance/vehicles')
+            }
         }
 
         const goHome = () => router.push('/car-maintenance')
@@ -209,9 +215,11 @@ export default {
             alert('Open maintenance history')
         }
 
-        const openRecordDetail = (id) => {
+        const openRecordDetail = (record) => {
+            const id = record?.id || record?._id
             if (!id) return
-            router.push(`/car-maintenance/maintenance/${id}`)
+            const query = record?.vehicleId ? { vehicleId: record.vehicleId } : {}
+            router.push({ path: `/car-maintenance/maintenance/${id}`, query })
         }
 
         const formattedOdometer = computed(() => {

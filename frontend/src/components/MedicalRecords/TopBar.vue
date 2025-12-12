@@ -97,7 +97,7 @@ export default {
 
 .back-button {
     cursor: pointer;
-    color: var(--accent-2);
+    color: var(--text-primary);
     transition: all 0.2s ease;
     padding: 4px;
     border-radius: 8px;

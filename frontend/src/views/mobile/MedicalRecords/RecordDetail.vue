@@ -563,7 +563,9 @@ export default {
 <style scoped>
 .record-detail-page {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: radial-gradient(circle at 20% 20%, rgba(79,70,229,0.14), transparent 32%),
+                radial-gradient(circle at 80% 10%, rgba(34,197,94,0.12), transparent 28%),
+                var(--bg-main);
 }
 
 .record-detail-content {
@@ -571,16 +573,17 @@ export default {
 }
 
 .state-card {
-    background: white;
+    background: var(--glass-ghost-bg);
     border-radius: 16px;
     padding: 24px;
     text-align: center;
-    color: #4b5563;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    color: var(--text-secondary);
+    box-shadow: var(--glass-card-shadow);
+    border: 1px solid var(--glass-card-border);
 }
 
 .state-card.error {
-    color: #b91c1c;
+    color: #f87171;
 }
 
 .detail-stack {
@@ -593,10 +596,11 @@ export default {
 .notes-card,
 .attachments-card,
 .tags-card {
-    background: white;
+    background: var(--glass-card-bg);
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--glass-card-shadow);
+    border: 1px solid var(--glass-card-border);
 }
 
 .summary-header {
@@ -608,7 +612,7 @@ export default {
 
 .summary-label {
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -616,12 +620,12 @@ export default {
     margin: 2px 0 0 0;
     font-size: 16px;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-primary);
 }
 
 .record-date {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .summary-grid {
@@ -635,10 +639,10 @@ export default {
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--glass-card-border);
     border-radius: 12px;
-    background: #f9fafb;
-    color: #4b5563;
+    background: var(--glass-ghost-bg);
+    color: var(--text-secondary);
 }
 
 .notes-card h3,
@@ -647,12 +651,12 @@ export default {
     margin: 0 0 12px 0;
     font-size: 16px;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-primary);
 }
 
 .notes-card p {
     margin: 0;
-    color: #4b5563;
+    color: var(--text-secondary);
     line-height: 1.5;
 }
 
@@ -665,14 +669,15 @@ export default {
 .tag-chip {
     padding: 6px 12px;
     border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--glass-ghost-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-card-border);
     font-size: 13px;
     font-weight: 500;
 }
 
 .empty-hint {
-    color: #9ca3af;
+    color: var(--text-muted);
     font-size: 13px;
 }
 
@@ -686,8 +691,9 @@ export default {
     position: relative;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--glass-card-shadow);
     cursor: pointer;
+    border: 1px solid var(--glass-card-border);
 }
 
 .image-thumb img {
@@ -719,19 +725,21 @@ export default {
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--glass-card-border);
     border-radius: 12px;
+    background: var(--glass-ghost-bg);
 }
 
 .file-icon {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: #f0f4ff;
+    background: var(--glass-ghost-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #667eea;
+    color: var(--text-primary);
+    border: 1px solid var(--glass-card-border);
 }
 
 .file-info {
@@ -741,17 +749,17 @@ export default {
 .file-name {
     margin: 0;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-primary);
 }
 
 .file-meta {
     margin: 2px 0 0;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .file-download {
-    color: #4b5563;
+    color: var(--text-primary);
     display: flex;
 }
 
@@ -770,7 +778,7 @@ export default {
     width: 100%;
     max-width: 480px;
     position: relative;
-    color: white;
+    color: #f8fafc;
 }
 
 .viewer-close {

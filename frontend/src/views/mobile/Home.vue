@@ -6,7 +6,9 @@
     <header class="hero">
         <div class="hero-top">
             <div class="brand">
-                <div class="logo-mark">M</div>
+                <div class="logo-mark">
+                    <img src="@/assets/MECLogger.png" alt="MEC Logger Logo" />
+                </div>
                 <div>
                     <p class="brand-chip">MEC LOGGER</p>
                     <h1>Control your universe</h1>
@@ -211,16 +213,21 @@ export default {
 }
 
 .logo-mark {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     border-radius: 14px;
-    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-    color: #0b1020;
+    background: var(--glass-ghost-bg);
     display: grid;
     place-items: center;
-    font-weight: 800;
-    font-size: 18px;
-    box-shadow: 0 10px 28px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--glass-card-border);
+    overflow: hidden;
+}
+
+.logo-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .brand-chip {
@@ -365,9 +372,8 @@ export default {
         font-size: 12px;
     }
     .logo-mark {
-        width: 42px;
-        height: 42px;
-        font-size: 16px;
+        width: 52px;
+        height: 52px;
     }
 }
 </style>

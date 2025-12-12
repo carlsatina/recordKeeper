@@ -135,13 +135,31 @@
         <!-- Records Tab -->
         <div v-if="activeTab === 'records'" class="tab-content">
             <div class="records-list-view">
+                <div class="records-search glass-card">
+                    <mdicon name="magnify" :size="20" />
+                    <input
+                        v-model="recordSearch"
+                        type="text"
+                        placeholder="Search records by title or type"
+                        aria-label="Search records"
+                    />
+                    <button 
+                        v-if="recordSearch" 
+                        class="clear-btn" 
+                        type="button" 
+                        @click="recordSearch = ''"
+                    >
+                        <mdicon name="close-circle" :size="18"/>
+                    </button>
+                </div>
+
                 <div v-if="medicalRecordsLoading" class="records-loading large">
                     Loading medical records...
                 </div>
                 <template v-else>
                     <div 
                         class="record-card glass-card" 
-                        v-for="record in medicalRecords" 
+                        v-for="record in filteredMedicalRecords" 
                         :key="record.id"
                         @click="openRecordDetail(record)"
                     >
@@ -157,10 +175,12 @@
                         <mdicon name="chevron-right" :size="20" class="record-chevron"/>
                     </div>
 
-                    <div v-if="medicalRecords.length === 0" class="empty-state">
+                    <div v-if="filteredMedicalRecords.length === 0" class="empty-state">
                         <mdicon name="file-document-multiple" :size="64" class="empty-icon"/>
-                        <p class="empty-title">No Records Yet</p>
-                        <p class="empty-text">Start adding medical records to track your health history</p>
+                        <p class="empty-title">{{ recordSearch ? 'No results' : 'No Records Yet' }}</p>
+                        <p class="empty-text">
+                            {{ recordSearch ? 'Try another search term.' : 'Start adding medical records to track your health history' }}
+                        </p>
                     </div>
 
                     <p v-if="medicalRecordsError" class="records-error">
@@ -626,6 +646,7 @@ export default {
             error: medicalRecordsError,
             fetchRecords: fetchMedicalRecords
         } = useMedicalRecords()
+        const recordSearch = ref('')
         const {
             reminders: medicineReminders,
             loading: remindersLoading,
@@ -749,6 +770,16 @@ export default {
 
         const recentMedicalRecords = computed(() => {
             return medicalRecords.value.slice(0, 3)
+        })
+
+        const filteredMedicalRecords = computed(() => {
+            const term = recordSearch.value.trim().toLowerCase()
+            if (!term) return medicalRecords.value
+            return medicalRecords.value.filter((record) => {
+                const title = (record.title || '').toLowerCase()
+                const typeLabel = (getRecordTypeLabel(record.recordType) || '').toLowerCase()
+                return title.includes(term) || typeLabel.includes(term)
+            })
         })
 
         const addFamilyMember = () => {
@@ -1089,6 +1120,8 @@ export default {
             getRecordTypeLabel,
             getRecordIcon,
             formatRecordDate,
+            recordSearch,
+            filteredMedicalRecords,
             weekDays,
             bpChartData,
             showProfilePrompt,
@@ -1135,6 +1168,10 @@ export default {
 
 <style scoped>
 .medical-records-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
     min-height: 100vh;
     background: radial-gradient(circle at 20% 20%, rgba(79,70,229,0.15), transparent 40%),
                 radial-gradient(circle at 80% 10%, rgba(14,165,233,0.18), transparent 35%),
@@ -1170,16 +1207,17 @@ export default {
 
 .action-icon {
     cursor: pointer;
-    color: #67e8f9;
+    color: var(--accent-1);
     transition: all 0.2s ease;
-    padding: 6px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    padding: 8px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(103,232,249,0.25), rgba(168,85,247,0.3));
+    border: 1px solid var(--glass-card-border);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
 }
 
 .action-icon:active {
-    background: rgba(255,255,255,0.12);
+    background: linear-gradient(145deg, rgba(103,232,249,0.35), rgba(168,85,247,0.4));
     transform: scale(0.95);
 }
 
@@ -1340,13 +1378,13 @@ export default {
 .reminder-name {
     font-size: 15px;
     font-weight: 700;
-    color: #e5e7eb;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .reminder-details {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -1357,9 +1395,9 @@ export default {
 }
 
 .reminder-slot-pill {
-    border: 1px solid rgba(103,232,249,0.3);
-    background: rgba(103,232,249,0.08);
-    color: #67e8f9;
+    border: 1px solid var(--glass-card-border);
+    background: linear-gradient(145deg, rgba(103,232,249,0.25), rgba(168,85,247,0.3));
+    color: var(--accent-1);
     border-radius: 999px;
     padding: 6px 12px;
     font-size: 12px;
@@ -1367,10 +1405,11 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
 }
 
 .reminder-slot-pill.checked {
-    background: linear-gradient(135deg, #22d3ee, #a855f7);
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-4));
     border-color: transparent;
     color: #0b1020;
 }
@@ -1434,13 +1473,15 @@ export default {
 .record-icon {
     width: 46px;
     height: 46px;
-    background: linear-gradient(145deg, rgba(103,232,249,0.1), rgba(168,85,247,0.12));
+    background: linear-gradient(145deg, rgba(103,232,249,0.25), rgba(168,85,247,0.3));
     border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #67e8f9;
+    color: var(--accent-1);
     flex-shrink: 0;
+    border: 1px solid var(--glass-card-border);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
 }
 
 .record-content {
@@ -1473,6 +1514,32 @@ export default {
     padding-bottom: 88px;
 }
 
+.records-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+}
+
+.records-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.records-search .clear-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .record-card {
     background: rgba(255,255,255,0.05);
     border-radius: 14px;
@@ -1492,13 +1559,15 @@ export default {
 .record-icon-large {
     width: 46px;
     height: 46px;
-    background: linear-gradient(145deg, rgba(103,232,249,0.1), rgba(34,197,94,0.12));
-    border-radius: 50%;
+    background: linear-gradient(145deg, rgba(103,232,249,0.25), rgba(168,85,247,0.3));
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #67e8f9;
+    color: var(--accent-1);
     flex-shrink: 0;
+    border: 1px solid var(--glass-card-border);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
 }
 
 .record-info {
@@ -1509,7 +1578,7 @@ export default {
 .record-title {
     font-size: 15px;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--text-primary);
     margin: 0 0 2px 0;
     white-space: nowrap;
     overflow: hidden;
@@ -1526,7 +1595,7 @@ export default {
 }
 
 .record-chevron {
-    color: #9ca3af;
+    color: var(--text-muted);
     flex-shrink: 0;
 }
 

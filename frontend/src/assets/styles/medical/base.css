@@ -1,9 +1,12 @@
 .medical-records-container {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
     min-height: 100vh;
     background: var(--bg-main);
     position: relative;
     overflow: hidden;
+    width: 100%;
 }
 
 .medical-orb {
@@ -60,7 +63,7 @@
 
 .main-content {
     flex: 1;
-    margin-left: 260px;
+    margin-left: 0;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -123,6 +126,16 @@
     animation: fadeIn 0.3s ease;
     max-width: 1400px;
     margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .medical-records-container {
+        flex-direction: row;
+    }
+
+    .main-content {
+        margin-left: 260px;
+    }
 }
 
 @keyframes fadeIn {

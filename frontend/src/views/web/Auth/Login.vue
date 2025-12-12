@@ -5,7 +5,7 @@
             <div class="brand-icon">
                 <mdicon name="file-document-multiple" :size="72"/>
             </div>
-            <h1 class="brand-title">Record Keeper</h1>
+            <h1 class="brand-title">MEC Logger</h1>
             <p class="brand-subtitle">Welcome back! Please login to continue</p>
         </div>
 

@@ -122,7 +122,9 @@ export default {
 <style scoped>
 .reminder-history-page {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: radial-gradient(circle at 20% 20%, rgba(79,70,229,0.12), transparent 36%),
+                radial-gradient(circle at 80% 0%, rgba(6,182,212,0.12), transparent 32%),
+                var(--bg-main);
     display: flex;
     flex-direction: column;
     padding-bottom: 24px;
@@ -133,33 +135,35 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    background: white;
-    border-bottom: 1px solid #eef2ff;
+    background: var(--glass-ghost-bg);
+    border-bottom: 1px solid var(--glass-card-border);
 }
 
 .title {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #111827;
+    color: var(--text-primary);
 }
 
 .icon-btn {
     border: none;
-    background: transparent;
+    background: var(--glass-ghost-bg);
     padding: 6px;
     border-radius: 12px;
+    color: var(--text-primary);
 }
 
 .search-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: white;
+    background: var(--glass-card-bg);
     margin: 16px;
     padding: 12px 14px;
     border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--glass-card-shadow);
+    border: 1px solid var(--glass-card-border);
 }
 
 .search-row input {
@@ -167,6 +171,8 @@ export default {
     flex: 1;
     font-size: 15px;
     outline: none;
+    background: transparent;
+    color: var(--text-primary);
 }
 
 .history-list {
@@ -178,10 +184,11 @@ export default {
 }
 
 .history-card {
-    background: white;
+    background: var(--glass-card-bg);
     border-radius: 16px;
     padding: 16px;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+    box-shadow: var(--glass-card-shadow);
+    border: 1px solid var(--glass-card-border);
 }
 
 .history-card:active {
@@ -199,18 +206,18 @@ export default {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--text-primary);
 }
 
 .history-details {
     margin: 4px 0 0;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .history-date {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-muted);
 }
 
 .empty-state {

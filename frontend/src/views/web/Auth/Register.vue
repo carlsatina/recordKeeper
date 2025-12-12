@@ -5,14 +5,14 @@
             <div class="brand-icon">
                 <mdicon name="file-document-multiple" :size="72"/>
             </div>
-            <h1 class="brand-title">Record Keeper</h1>
+            <h1 class="brand-title">MEC Logger</h1>
             <p class="brand-subtitle">Organize and safeguard your records effortlessly</p>
         </div>
 
         <form class="register-panel" @submit.prevent="handleRegister">
             <div class="panel-header">
                 <h2 class="panel-title">Create an account</h2>
-                <p class="panel-subtitle">Join Record Keeper in a few quick steps</p>
+                <p class="panel-subtitle">Join MEC Logger in a few quick steps</p>
             </div>
 
             <div class="form-group">

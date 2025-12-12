@@ -1,6 +1,6 @@
-# recordKeeper – Personal History & Records Tracker
+# MECLogger – Personal History & Records Tracker
 
-recordKeeper is a simple, central place to store the important “history” of your life:
+meclogger is a simple, central place to store the important “history” of your life:
 
 - **Medical data** – blood sugar readings, prescriptions, doctor visits  
 - **Car maintenance** – services, repairs, mileage, important dates  

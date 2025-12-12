@@ -1,30 +1,32 @@
 <template>
 <div class="home-container">
-    <div class="header">
-        <div class="user-bar">
-            <div class="user-info">
-                <span class="user-label">Signed in as</span>
-                <h2 class="user-name">{{ userName }}</h2>
+    <div class="header glass-card">
+        <div class="brand-block">
+            <div class="logo-wrap">
+                <img src="@/assets/MECLogger.png" alt="MEC Logger Logo" />
             </div>
-            <div class="user-actions">
-                <button class="theme-toggle-pill" type="button" @click="toggleTheme">
-                    <mdicon :name="isDark ? 'white-balance-sunny' : 'moon-waning-crescent'" size="18"/>
-                    <span>{{ isDark ? 'Dark' : 'Light' }}</span>
-                </button>
-                <button class="logout-btn" @click="logout">
-                    <mdicon name="logout" size="20"/>
-                    <span>Logout</span>
-                </button>
+            <div class="brand-text">
+                <p class="brand-chip">MEC Logger</p>
+                <h1 class="brand-title">Record Keeper</h1>
+                <p class="brand-sub">Health, maintenance, and finance in one dashboard.</p>
             </div>
         </div>
-        <div class="logo-block">
-            <img src="@/assets/MECLogger.png" alt="MEC Logger Logo" />
-            <div>
-                <h2 class="text-center mt-4 mb-1">MEC Logger</h2>
-                <p class="text-center text-muted mb-3">Record Keeper</p>
+        <div class="user-block">
+            <p class="user-label">Signed in as</p>
+            <div class="user-row">
+                <h3 class="user-name">{{ userName }}</h3>
+                <div class="user-actions">
+                    <button class="theme-toggle-pill" type="button" @click="toggleTheme">
+                        <mdicon :name="isDark ? 'white-balance-sunny' : 'moon-waning-crescent'" size="18"/>
+                        <span>{{ isDark ? 'Dark' : 'Light' }}</span>
+                    </button>
+                    <button class="logout-btn" @click="logout">
+                        <mdicon name="logout" size="20"/>
+                        <span>Logout</span>
+                    </button>
+                </div>
             </div>
         </div>
-        <p class="text-center text-muted">Choose a feature to get started</p>
     </div>
 
     <div class="features-grid">
@@ -200,43 +202,112 @@ export default {
 <style scoped>
 .home-container {
     min-height: 100vh;
-    padding: 40px 20px;
+    padding: 24px 20px 32px;
     background: var(--home-bg-web);
     color: var(--text-primary);
 }
 
 .header {
-    margin-bottom: 40px;
-}
-
-.logo-block {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    margin: 0 auto 24px;
+    max-width: 1200px;
 }
 
-.logo-block img {
-    width: 90px;
-    height: 90px;
+.brand-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 20px;
+    background: var(--glass-ghost-bg);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--glass-card-border);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+    overflow: hidden;
+}
+
+.logo-wrap img {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 
-.header p {
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.brand-chip {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.brand-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.brand-sub {
+    margin: 0;
     color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.user-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    min-width: 240px;
+}
+
+.user-label {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.user-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.user-name {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 .reminders-section {
     max-width: 1200px;
-    margin: 0 auto 40px;
-    padding: 0 20px;
+    margin: 0 auto 24px;
+    padding: 0 12px;
 }
 
 .reminders-card {
     background: var(--glass-card-bg);
     border-radius: 20px;
-    padding: 30px;
+    padding: 24px;
     box-shadow: var(--glass-card-shadow);
     border: 1px solid var(--glass-card-border);
 }
@@ -371,10 +442,10 @@ export default {
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
+    gap: 20px;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 12px;
 }
 
 @media (min-width: 768px) {
@@ -383,16 +454,37 @@ export default {
     }
 }
 
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .user-block {
+        align-items: flex-start;
+        width: 100%;
+    }
+    .user-row {
+        justify-content: flex-start;
+    }
+    .logo-wrap {
+        width: 100px;
+        height: 100px;
+    }
+    .brand-title {
+        font-size: 24px;
+    }
+}
+
 .feature-card {
     background: var(--glass-card-bg);
     border-radius: 20px;
-    padding: 40px 30px;
+    padding: 28px 22px;
     box-shadow: var(--glass-card-shadow);
     border: 1px solid var(--glass-card-border);
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
-    min-height: 280px;
+    min-height: 240px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -471,16 +563,18 @@ export default {
 }
 
 .user-label {
-    font-size: 13px;
-    letter-spacing: 1px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     color: var(--text-muted);
+    margin: 0;
 }
 
 .user-name {
-    margin: 4px 0 0;
-    font-size: 28px;
+    margin: 0;
+    font-size: 18px;
     color: var(--text-primary);
+    font-weight: 700;
 }
 
 .user-actions {

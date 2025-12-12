@@ -20,12 +20,16 @@
     <div v-else-if="vehicle" class="car-body">
         <div class="hero car-card">
             <div class="hero-thumb">
-                <img v-if="vehicle.imageUrl" :src="vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`" alt="Vehicle" />
+                <img 
+                    v-if="vehicle.imageUrl" 
+                    :src="vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`" 
+                    alt="Vehicle" 
+                />
                 <mdicon v-else name="car-sports" :size="42"/>
             </div>
             <div class="hero-meta">
                 <p class="name">{{ displayName(vehicle) }}</p>
-                <p class="type">{{ vehicle.vehicleType }}</p>
+                <p class="type">{{ vehicle.vehicleType }} <span v-if="vehicle.year">· {{ vehicle.year }}</span></p>
                 <p class="mileage" v-if="vehicle.currentMileage">Odometer: {{ vehicle.currentMileage.toLocaleString() }} km</p>
             </div>
         </div>
@@ -168,9 +172,11 @@ export default {
 </script>
 
 <style scoped>
-.hero { display: flex; align-items: center; gap: 12px; }
-.hero-thumb { width: 68px; height: 68px; border-radius: 16px; background: var(--glass-ghost-bg); display: grid; place-items: center; border: 1px solid var(--glass-card-border); overflow: hidden; }
-.hero-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.hero { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.hero-thumb { width: 100%; max-height: 220px; border-radius: 18px; background: var(--surface-plain); display: grid; place-items: center; border: 1px solid var(--glass-card-border); overflow: hidden; padding: 12px; }
+.hero-thumb img { width: 100%; height: 100%; object-fit: contain; background: transparent; border-radius: 12px; }
+:global(.theme-light) .hero-thumb { background: linear-gradient(135deg, rgba(233, 236, 237, 0.1), rgba(241, 240, 243, 0.12)), var(--surface-plain); }
+.hero-meta { display: flex; flex-direction: column; gap: 4px; }
 .hero-meta p { margin: 0; }
 .hero-meta .name { font-weight: 800; font-size: 18px; color: var(--text-primary); }
 .hero-meta .type { font-size: 13px; color: var(--text-muted); }

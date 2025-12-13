@@ -24,6 +24,7 @@
                     <mdicon name="logout" size="18" />
                     <span>Logout</span>
                 </button>
+                <span class="version-pill">v{{ appVersion }}</span>
             </div>
         </div>
         <p class="hero-sub">Health, maintenance, and finances—unified in a sleek console.</p>
@@ -95,6 +96,7 @@ import Datepicker from 'vuejs3-datepicker'
 import getProfile from '@/composables/getProfile'
 import { Role } from '@/constants/enums'
 import { useTheme } from '@/composables/theme'
+import appMeta from '../../../package.json'
 
 export default {
     name: "HomeMobile",
@@ -106,6 +108,7 @@ export default {
     setup() {
         const router = useRouter()
         const { isDark, toggleTheme } = useTheme()
+        const appVersion = appMeta.version || '1.0.0'
 
         const navigateTo = (path) => {
             router.push(path)
@@ -151,6 +154,7 @@ export default {
             userName,
             isAdmin,
             isDark,
+            appVersion,
             toggleTheme
         }
     }
@@ -267,6 +271,18 @@ export default {
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.version-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--glass-ghost-bg);
+    border: 1px solid var(--glass-card-border);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12px;
 }
 
 .ghost-btn {

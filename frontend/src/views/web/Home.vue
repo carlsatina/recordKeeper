@@ -24,6 +24,7 @@
                         <mdicon name="logout" size="20"/>
                         <span>Logout</span>
                     </button>
+                    <span class="version-chip">v{{ appVersion }}</span>
                 </div>
             </div>
         </div>
@@ -79,6 +80,7 @@ import getProfile from '@/composables/getProfile'
 import { useMedicineReminders } from '@/composables/medicineReminders'
 import { Role } from '@/constants/enums'
 import { useTheme } from '@/composables/theme'
+import appMeta from '../../../package.json'
 
 export default {
     name: "HomeWeb",
@@ -91,6 +93,7 @@ export default {
         const router = useRouter()
         const activeProfileId = ref(localStorage.getItem('selectedProfileId') || null)
         const { isDark, toggleTheme } = useTheme()
+        const appVersion = appMeta.version || '1.0.0'
 
         const navigateTo = (path) => {
             router.push(path)
@@ -193,6 +196,7 @@ export default {
             activeProfileId,
             isAdmin,
             isDark,
+            appVersion,
             toggleTheme
         }
     }
@@ -583,6 +587,18 @@ export default {
     gap: 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.version-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--glass-ghost-bg);
+    border: 1px solid var(--glass-card-border);
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 12px;
 }
 
 .logout-btn {

@@ -2180,9 +2180,7 @@ export default {
             if (tab === 'home' && !budgetsLoaded.value) {
                 loadBudgets()
                 if (!categoriesLoaded.value) loadCategories()
-            }
-            if (tab === 'home' && schedules.value.length === 0) {
-                loadSubscriptions()
+                if (schedules.value.length === 0) loadSubscriptions()
             }
             if (tab === 'schedules' && schedules.value.length === 0) {
                 loadSubscriptions()
@@ -2197,7 +2195,7 @@ export default {
             if (tab === 'transactions' && !budgetsLoaded.value) {
                 loadBudgets()
             }
-        })
+        }, { immediate: true })
 
         watch(categories, (newCats) => {
             if (!Array.isArray(expenses.value)) return

@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <header class="car-hero">
@@ -78,6 +78,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import { useStaggerReady } from '@/composables/staggerReady'
 import Loading from '@/components/Loading.vue'
 
 const palette = ['#f472b6', '#6f6cf7', '#34d399', '#f59e0b', '#60a5fa', '#9ca3af']
@@ -99,6 +100,7 @@ export default {
         const defaultCurrency = ref('USD')
         const overlayActive = ref(false)
         const showLoading = computed(() => loading.value || overlayActive.value)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             overlayActive.value = true
@@ -108,8 +110,6 @@ export default {
                 overlayActive.value = false
             }
         }
-        const showLoading = computed(() => loading.value)
-
         const displayName = (vehicle) => {
             if (!vehicle) return 'Vehicle'
             const parts = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean)
@@ -246,7 +246,8 @@ export default {
             errorMessage,
             displayName,
             defaultCurrency,
-            showLoading
+            showLoading,
+            staggerReady
         }
 }
 }

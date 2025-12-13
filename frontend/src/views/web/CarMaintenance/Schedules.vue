@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <header class="car-hero">
@@ -79,6 +79,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceSchedulesWeb',
@@ -97,6 +98,7 @@ export default {
         const distanceUnit = ref('km')
         let searchTimer = null
         const overlayActive = ref(false)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             overlayActive.value = true
@@ -214,7 +216,6 @@ export default {
             })
         })
         const showLoading = computed(() => loading.value || overlayActive.value)
-        const showLoading = computed(() => loading.value)
 
         const handleVehicleChange = async() => {
             localStorage.setItem('selectedVehicleId', selectedVehicleId.value)
@@ -279,7 +280,8 @@ export default {
             goAddSchedule,
             distanceUnit,
             displayName,
-            showLoading
+            showLoading,
+            staggerReady
         }
     }
 }

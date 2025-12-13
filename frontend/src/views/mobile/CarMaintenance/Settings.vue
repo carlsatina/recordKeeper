@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
@@ -101,6 +101,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 import store from '@/store'
 export default {
@@ -133,6 +134,7 @@ export default {
         const maintenanceTypes = ref([...defaultMaintenanceTypes])
         const newMaintenanceType = ref('')
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -144,7 +146,7 @@ export default {
         }
 
         const goBack = () => router.back()
-        const goHome = () => router.push('/')
+        const goHome = () => router.push('/car-maintenance')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
 
@@ -218,7 +220,8 @@ export default {
             addMaintenanceType,
             removeType,
             persistPreferences,
-            loadingOverlay
+            loadingOverlay,
+            staggerReady
         }
     }
 }

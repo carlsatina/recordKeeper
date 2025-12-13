@@ -1,9 +1,11 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
-        <span class="car-icon-btn ghost"></span>
+        <button class="car-icon-btn" @click="goBackPage">
+            <mdicon name="chevron-left" :size="22"/>
+        </button>
         <div>
             <h2 class="car-hero-title">Add Maintenance</h2>
             <p class="car-hero-sub">Track service details and costs</p>
@@ -126,6 +128,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceAddMaintenanceMobile',
@@ -163,6 +166,7 @@ export default {
         const distanceUnit = ref('km')
         const currencyOptions = ref(['USD', 'PHP', 'EUR', 'JPY', 'SGD'])
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const form = ref({
             vehicleId: '',
@@ -199,6 +203,7 @@ export default {
                 router.push('/car-maintenance')
             }
         }
+        const goBackPage = () => router.back()
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -351,6 +356,7 @@ export default {
             errorMessage,
             successMessage,
             goBack,
+            goBackPage,
             submitRecord,
             displayName,
             isEditing,
@@ -362,7 +368,8 @@ export default {
             distanceUnitLabel,
             currencyOptions,
             cancelEdit,
-            loadingOverlay
+            loadingOverlay,
+            staggerReady
         }
     }
 }

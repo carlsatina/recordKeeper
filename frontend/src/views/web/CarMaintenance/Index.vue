@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <header class="car-hero">
@@ -245,6 +245,7 @@ import store from '@/store'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 const palette = ['#f472b6', '#6f6cf7', '#34d399', '#f59e0b', '#60a5fa', '#9ca3af']
 
@@ -275,6 +276,7 @@ export default {
         const loadingReminders = ref(false)
         const overlayActive = ref(false)
         const errorMessage = ref('')
+        const staggerReady = useStaggerReady()
         const distanceUnit = ref('km')
         const defaultCurrency = ref('USD')
         const maintenanceTypes = ref([])
@@ -641,7 +643,8 @@ export default {
             newMaintenanceType,
             addType,
             removeType,
-            showLoading
+            showLoading,
+            staggerReady
         }
     }
 }

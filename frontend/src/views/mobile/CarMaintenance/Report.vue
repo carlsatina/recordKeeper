@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
@@ -79,6 +79,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceReportMobile',
@@ -93,6 +94,7 @@ export default {
         const records = ref([])
         const currency = ref('USD')
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -104,7 +106,7 @@ export default {
         }
 
         const goBack = () => router.push('/')
-        const goHome = () => router.push('/')
+        const goHome = () => router.push('/car-maintenance')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
         const goSettings = () => router.push('/car-maintenance/settings')
@@ -216,7 +218,8 @@ export default {
             currency,
             segmentStyle,
             loadingOverlay,
-            handleVehicleChange
+            handleVehicleChange,
+            staggerReady
         }
     }
 }

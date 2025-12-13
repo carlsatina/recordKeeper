@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <header class="car-hero">
@@ -63,6 +63,7 @@ import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceVehiclesWeb',
@@ -76,6 +77,7 @@ export default {
         const loading = ref(false)
         const errorMessage = ref('')
         const search = ref('')
+        const staggerReady = useStaggerReady()
 
         const loadVehicles = async() => {
             loading.value = true
@@ -140,7 +142,8 @@ export default {
             goReport,
             goSettings,
             API_BASE_URL,
-            showLoading
+            showLoading,
+            staggerReady
         }
     }
 }

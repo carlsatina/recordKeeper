@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
@@ -141,6 +141,7 @@ import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: "CarMaintenanceMobile",
@@ -163,6 +164,7 @@ export default {
         const loadingOverlay = ref(false)
         const errorMessage = ref('')
         const distanceUnit = ref('km')
+        const staggerReady = useStaggerReady()
 
         const selectedVehicle = computed(() => {
             return vehicles.value.find(v => v.id === selectedVehicleId.value) || null
@@ -176,7 +178,7 @@ export default {
             }
         }
 
-        const goHome = () => router.push('/')
+        const goHome = () => router.push('/car-maintenance')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goReport = () => router.push('/car-maintenance/report')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
@@ -402,7 +404,8 @@ export default {
             showOdometerModal,
             odometerInput,
             saveOdometer,
-            savingOdometer
+            savingOdometer,
+            staggerReady
         }
     }
 }

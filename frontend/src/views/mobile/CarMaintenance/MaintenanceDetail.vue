@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
@@ -90,6 +90,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/constants/config'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'MaintenanceDetailMobile',
@@ -106,6 +107,7 @@ export default {
         const confirmDelete = ref(false)
         const loading = ref(true)
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -216,7 +218,8 @@ export default {
             deleteRecord,
             confirmDelete,
             loading,
-            loadingOverlay
+            loadingOverlay,
+            staggerReady
         }
     }
 }

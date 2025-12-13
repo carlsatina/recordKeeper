@@ -1,5 +1,5 @@
 <template>
-<div class="car-shell">
+<div class="car-shell stagger-page stagger-seq" :class="{ 'stagger-ready': staggerReady }">
     <div class="car-orb one"></div>
     <div class="car-orb two"></div>
     <div class="car-hero">
@@ -106,6 +106,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/constants/config'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceAddVehicleMobile',
@@ -139,6 +140,7 @@ export default {
         const editingId = ref('')
         const existingImageUrl = ref('')
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const goBack = () => router.push('/')
         const goBackPage = () => router.back()
@@ -299,7 +301,8 @@ export default {
             handleFileChange,
             submitVehicle,
             isEditing,
-            loadingOverlay
+            loadingOverlay,
+            staggerReady
         }
     }
 }

@@ -195,6 +195,7 @@ import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
 import Loading from '@/components/Loading.vue'
+import { useStaggerReady } from '@/composables/staggerReady'
 
 export default {
     name: 'CarMaintenanceSchedulesMobile',
@@ -239,6 +240,7 @@ export default {
         const detailReminder = ref(null)
         const showDeleteModal = ref(false)
         const loadingOverlay = ref(false)
+        const staggerReady = useStaggerReady()
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -250,7 +252,7 @@ export default {
         }
 
         const goBack = () => router.push('/')
-        const goHome = () => router.push('/')
+        const goHome = () => router.push('/car-maintenance')
         const addSchedule = () => {
             router.push({ path: '/car-maintenance/schedules/add', query: selectedVehicleId.value ? { vehicleId: selectedVehicleId.value } : {} })
         }
@@ -505,7 +507,8 @@ export default {
             performDelete,
             searchTerm,
             debouncedSearch,
-            loadingOverlay
+            loadingOverlay,
+            staggerReady
         }
     }
 }

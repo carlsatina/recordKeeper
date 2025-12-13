@@ -50,6 +50,7 @@ The `.env` file must be in the root folder and the variables are the following:
 PORT=9000
 ACCESS_TOKEN_SECRET="xxxxx"
 API_DOC_URL='http://localhost'
+CORS_ALLOWED_ORIGINS="https://meclogger.com,https://www.meclogger.com,https://api.meclogger.com"
 # Optional overrides for upload/payload limits
 # MEDICAL_RECORD_MAX_FILE_MB=10
 # MEDICAL_RECORD_MAX_TOTAL_MB=50

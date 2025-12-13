@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken'
 import { uploadLogo } from './src/middlewares/uploadLogo';
 import multer from 'multer'
 import { REQUEST_BODY_LIMIT, MEDICAL_RECORD_MAX_FILE_MB } from './src/config/limits'
+import { corsOptions } from './src/config/cors'
 
 import swaggerJSDoc from 'swagger-jsdoc'
 import swaggerUi from 'swagger-ui-express'
@@ -25,7 +26,8 @@ const port = process.env.PORT;
 
 const dbClient = prisma
 
-app.use(cors())
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 app.use(express.static('public'))
 app.use(express.json({ limit: REQUEST_BODY_LIMIT }))
 app.use(express.urlencoded({ limit: REQUEST_BODY_LIMIT, extended: true }))

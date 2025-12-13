@@ -5,9 +5,27 @@ import fs from 'fs'
 import path from 'path'
 import type { Express } from 'express'
 import { uploadImageToStorage } from '../services/blobStorage'
+import {
+    MEDICAL_RECORD_MAX_TOTAL_BYTES,
+    MEDICAL_RECORD_MAX_TOTAL_MB,
+    MEDICAL_RECORD_MAX_FILE_MB
+} from '../config/limits'
 
 const RECORDS_PUBLIC_PATH = '/records'
 const RECORDS_UPLOAD_PATH = path.resolve(process.cwd(), 'uploaded-images', 'records')
+
+const attachmentsWithinLimit = (files: Express.Multer.File[], res: any) => {
+    if (!files.length) return true
+    const totalBytes = files.reduce((sum, file) => sum + (file?.size || 0), 0)
+    if (totalBytes > MEDICAL_RECORD_MAX_TOTAL_BYTES) {
+        res.status(413).json({
+            status: 413,
+            message: `Attachments too large. Maximum combined size is ${MEDICAL_RECORD_MAX_TOTAL_MB}MB (limit ${MEDICAL_RECORD_MAX_FILE_MB}MB per file).`
+        })
+        return false
+    }
+    return true
+}
 
 const isRemoteUrl = (url: string) => /^https?:\/\//i.test(url)
 
@@ -193,6 +211,10 @@ const createMedicalRecord = async (req: ExtendedRequest, res: any) => {
 
     const files = (req.files as Express.Multer.File[]) || []
 
+    if (!attachmentsWithinLimit(files, res)) {
+        return
+    }
+
     const record = await prisma.medicalRecord.create({
         data: {
             profileId: profile.id,
@@ -269,6 +291,9 @@ const updateMedicalRecord = async (req: ExtendedRequest, res: any) => {
         filesToRemove
     } = req.body
     const files = (req.files as Express.Multer.File[]) || []
+    if (!attachmentsWithinLimit(files, res)) {
+        return
+    }
     const parsedTags = parseTagsInput(tags)
     const filesMarkedForRemoval = parseIdsInput(filesToRemove)
 

@@ -50,6 +50,11 @@ The `.env` file must be in the root folder and the variables are the following:
 PORT=9000
 ACCESS_TOKEN_SECRET="xxxxx"
 API_DOC_URL='http://localhost'
+# Optional overrides for upload/payload limits
+# MEDICAL_RECORD_MAX_FILE_MB=10
+# MEDICAL_RECORD_MAX_TOTAL_MB=50
+# MEDICAL_RECORD_MAX_FILES=5
+# REQUEST_BODY_LIMIT="50mb"
 # Optional: enable Vercel Blob for media uploads
 # VERCEL_BLOB_READ_WRITE_TOKEN="<your-vercel-blob-token>"
 # Database TLS (preferred secure setup)

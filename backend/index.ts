@@ -12,6 +12,7 @@ import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { uploadLogo } from './src/middlewares/uploadLogo';
 import multer from 'multer'
+import { REQUEST_BODY_LIMIT, MEDICAL_RECORD_MAX_FILE_MB } from './src/config/limits'
 
 import swaggerJSDoc from 'swagger-jsdoc'
 import swaggerUi from 'swagger-ui-express'
@@ -26,7 +27,8 @@ const dbClient = prisma
 
 app.use(cors())
 app.use(express.static('public'))
-app.use(express.json())
+app.use(express.json({ limit: REQUEST_BODY_LIMIT }))
+app.use(express.urlencoded({ limit: REQUEST_BODY_LIMIT, extended: true }))
 
 app.use('/logo', express.static("./uploaded-images/logo"))
 app.use('/portfolio', express.static("./uploaded-images/portfolio"))
@@ -63,11 +65,17 @@ app.use('/api/v1/expenses', expenseRouter(dbClient, authenticateUser))
 
 // Global error handler for uploads and other middleware
 app.use((err: any, _req: any, res: any, _next: any) => {
+    if (err?.type === 'entity.too.large' || err?.status === 413) {
+        return res.status(413).json({
+            status: 413,
+            message: `Request too large. Maximum allowed payload is ${REQUEST_BODY_LIMIT}.`
+        })
+    }
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(413).json({
                 status: 413,
-                message: 'File too large. Maximum size is 5MB per file.'
+                message: `File too large. Maximum size is ${MEDICAL_RECORD_MAX_FILE_MB}MB per file.`
             })
         }
         return res.status(400).json({

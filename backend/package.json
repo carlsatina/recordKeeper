@@ -1,7 +1,7 @@
 {
-  "name": "recordKeeper",
+  "name": "meclogger",
   "version": "0.1.0",
-  "description": "recordKeeper backend API",
+  "description": "meclogger backend API",
   "main": "index.js",
   "engines": {
     "node": ">=22 <25"
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/carlsatina/recordKeeper.git"
+    "url": "git+https://github.com/carlsatina/meclogger.git"
   },
   "keywords": [
     "HealthRecords"
@@ -25,9 +25,9 @@
   "author": "RC Satina",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/carlsatina/recordKeeper/issues"
+    "url": "https://github.com/carlsatina/meclogger/issues"
   },
-  "homepage": "https://github.com/carlsatina/recordKeeper#readme",
+  "homepage": "https://github.com/carlsatina/meclogger#readme",
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",

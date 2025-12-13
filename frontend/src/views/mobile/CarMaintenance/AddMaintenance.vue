@@ -117,6 +117,7 @@
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
         <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     </form>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -124,9 +125,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceAddMaintenanceMobile',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const route = useRoute()
@@ -157,6 +162,7 @@ export default {
         const typeOptions = ref([...defaultTypeOptions])
         const distanceUnit = ref('km')
         const currencyOptions = ref(['USD', 'PHP', 'EUR', 'JPY', 'SGD'])
+        const loadingOverlay = ref(false)
 
         const form = ref({
             vehicleId: '',
@@ -194,26 +200,37 @@ export default {
             }
         }
 
-        const loadVehicles = async() => {
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
             try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-                if (!isEditing.value) {
-                    if (initialVehicleId.value) {
-                        const match = vehicles.value.find(v => v.id === initialVehicleId.value)
-                        if (match) {
-                            form.value.vehicleId = match.id
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
+
+        const loadVehicles = async() => {
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                    if (!isEditing.value) {
+                        if (initialVehicleId.value) {
+                            const match = vehicles.value.find(v => v.id === initialVehicleId.value)
+                            if (match) {
+                                form.value.vehicleId = match.id
+                            }
+                        }
+                        if (!form.value.vehicleId && vehicles.value.length) {
+                            form.value.vehicleId = vehicles.value[0].id
                         }
                     }
-                    if (!form.value.vehicleId && vehicles.value.length) {
-                        form.value.vehicleId = vehicles.value[0].id
-                    }
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
                 }
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            }
+            })
         }
 
         const loadRecord = async(id) => {
@@ -247,18 +264,20 @@ export default {
             successMessage.value = ''
             submitting.value = true
             try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                if (isEditing.value && editingId.value) {
-                    await updateMaintenanceRecord(token, editingId.value, payload.value)
-                    successMessage.value = 'Maintenance updated'
-                } else {
-                    await createMaintenanceRecord(token, payload.value)
-                    successMessage.value = 'Maintenance saved'
-                }
-                setTimeout(() => {
-                    router.push('/car-maintenance')
-                }, 600)
+                await withOverlay(async() => {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    if (isEditing.value && editingId.value) {
+                        await updateMaintenanceRecord(token, editingId.value, payload.value)
+                        successMessage.value = 'Maintenance updated'
+                    } else {
+                        await createMaintenanceRecord(token, payload.value)
+                        successMessage.value = 'Maintenance saved'
+                    }
+                    setTimeout(() => {
+                        router.push('/car-maintenance')
+                    }, 600)
+                })
             } catch (err) {
                 errorMessage.value = err?.message || 'Unable to save maintenance'
             } finally {
@@ -306,21 +325,23 @@ export default {
         }
 
         onMounted(async() => {
-            const editId = route.query.id
-            const vehicleIdQuery = Array.isArray(route.query.vehicleId) ? route.query.vehicleId[0] : route.query.vehicleId
-            if (vehicleIdQuery) {
-                initialVehicleId.value = vehicleIdQuery
-                form.value.vehicleId = vehicleIdQuery
-            }
-            if (editId) {
-                await loadRecord(editId)
-            }
-            await loadPreferences()
-            await loadVehicles()
-            if (isEditing.value) {
-                const veh = vehicles.value.find(v => v.id === form.value.vehicleId)
-                selectedVehicleName.value = veh ? displayName(veh) : ''
-            }
+            await withOverlay(async() => {
+                const editId = route.query.id
+                const vehicleIdQuery = Array.isArray(route.query.vehicleId) ? route.query.vehicleId[0] : route.query.vehicleId
+                if (vehicleIdQuery) {
+                    initialVehicleId.value = vehicleIdQuery
+                    form.value.vehicleId = vehicleIdQuery
+                }
+                if (editId) {
+                    await loadRecord(editId)
+                }
+                await loadPreferences()
+                await loadVehicles()
+                if (isEditing.value) {
+                    const veh = vehicles.value.find(v => v.id === form.value.vehicleId)
+                    selectedVehicleName.value = veh ? displayName(veh) : ''
+                }
+            })
         })
 
         return {
@@ -340,7 +361,8 @@ export default {
             distanceUnit,
             distanceUnitLabel,
             currencyOptions,
-            cancelEdit
+            cancelEdit,
+            loadingOverlay
         }
     }
 }

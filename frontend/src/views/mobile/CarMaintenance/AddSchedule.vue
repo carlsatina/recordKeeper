@@ -72,6 +72,7 @@
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
         <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     </form>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -79,9 +80,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceAddSchedule',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const route = useRoute()
@@ -117,6 +122,16 @@ export default {
             'Other'
         ]
         const typeOptions = ref([...defaultTypeOptions])
+        const loadingOverlay = ref(false)
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
 
         const displayName = (vehicle) => {
             const parts = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean)
@@ -124,17 +139,19 @@ export default {
         }
 
         const loadVehicles = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-                const preferredId = route.query.vehicleId || localStorage.getItem('selectedVehicleId')
-                const preferred = vehicles.value.find(v => v.id === preferredId)
-                form.value.vehicleId = preferred ? preferred.id : (vehicles.value[0]?.id || '')
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                    const preferredId = route.query.vehicleId || localStorage.getItem('selectedVehicleId')
+                    const preferred = vehicles.value.find(v => v.id === preferredId)
+                    form.value.vehicleId = preferred ? preferred.id : (vehicles.value[0]?.id || '')
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
+                }
+            })
         }
 
         const submitSchedule = async() => {
@@ -142,30 +159,32 @@ export default {
             successMessage.value = ''
             submitting.value = true
             try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                if (editingId.value) {
-                    await updateReminder(token, editingId.value, {
-                        vehicleId: form.value.vehicleId,
-                        maintenanceType: form.value.maintenanceType,
-                        title: form.value.maintenanceType,
-                        description: form.value.notes,
-                        dueDate: form.value.dueDate,
-                        dueMileage: form.value.dueMileage ? Number(form.value.dueMileage) : null
-                    })
-                    successMessage.value = 'Schedule updated'
-                } else {
-                    await createReminder(token, {
-                        vehicleId: form.value.vehicleId,
-                        maintenanceType: form.value.maintenanceType,
-                        title: form.value.maintenanceType,
-                        description: form.value.notes,
-                        dueDate: form.value.dueDate,
-                        dueMileage: form.value.dueMileage ? Number(form.value.dueMileage) : null
-                    })
-                    successMessage.value = 'Schedule saved'
-                }
-                setTimeout(() => router.push('/car-maintenance/schedules'), 400)
+                await withOverlay(async() => {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    if (editingId.value) {
+                        await updateReminder(token, editingId.value, {
+                            vehicleId: form.value.vehicleId,
+                            maintenanceType: form.value.maintenanceType,
+                            title: form.value.maintenanceType,
+                            description: form.value.notes,
+                            dueDate: form.value.dueDate,
+                            dueMileage: form.value.dueMileage ? Number(form.value.dueMileage) : null
+                        })
+                        successMessage.value = 'Schedule updated'
+                    } else {
+                        await createReminder(token, {
+                            vehicleId: form.value.vehicleId,
+                            maintenanceType: form.value.maintenanceType,
+                            title: form.value.maintenanceType,
+                            description: form.value.notes,
+                            dueDate: form.value.dueDate,
+                            dueMileage: form.value.dueMileage ? Number(form.value.dueMileage) : null
+                        })
+                        successMessage.value = 'Schedule saved'
+                    }
+                    setTimeout(() => router.push('/car-maintenance/schedules'), 400)
+                })
             } catch (err) {
                 errorMessage.value = err?.message || 'Unable to save schedule'
             } finally {
@@ -186,38 +205,42 @@ export default {
         const goBackPage = () => router.back()
 
         const loadReminder = async(id) => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) return
-                const reminder = await getReminder(token, id)
-                if (reminder) {
-                    editingId.value = reminder.id
-                    form.value = {
-                        vehicleId: reminder.vehicleId || '',
-                        maintenanceType: reminder.maintenanceType || '',
-                        dueDate: reminder.dueDate ? reminder.dueDate.substring(0, 10) : '',
-                        dueMileage: reminder.dueMileage || '',
-                        notes: reminder.description || ''
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    const reminder = await getReminder(token, id)
+                    if (reminder) {
+                        editingId.value = reminder.id
+                        form.value = {
+                            vehicleId: reminder.vehicleId || '',
+                            maintenanceType: reminder.maintenanceType || '',
+                            dueDate: reminder.dueDate ? reminder.dueDate.substring(0, 10) : '',
+                            dueMileage: reminder.dueMileage || '',
+                            notes: reminder.description || ''
+                        }
                     }
+                } catch (err) {
+                    // ignore load errors
                 }
-            } catch (err) {
-                // ignore load errors
-            }
+            })
         }
 
         const loadPreferences = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) return
-                const prefs = await getPreferences(token)
-                if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
-                    typeOptions.value = prefs.maintenanceTypes
-                } else {
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    const prefs = await getPreferences(token)
+                    if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                        typeOptions.value = prefs.maintenanceTypes
+                    } else {
+                        typeOptions.value = [...defaultTypeOptions]
+                    }
+                } catch (err) {
                     typeOptions.value = [...defaultTypeOptions]
                 }
-            } catch (err) {
-                typeOptions.value = [...defaultTypeOptions]
-            }
+            })
         }
 
         onMounted(() => {
@@ -245,7 +268,8 @@ export default {
             showTypeDropdown,
             typeOptions,
             toggleTypeDropdown,
-            chooseType
+            chooseType,
+            loadingOverlay
         }
     }
 }

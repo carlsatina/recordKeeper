@@ -70,6 +70,7 @@
             </div>
         </div>
     </main>
+    <Loading v-if="showLoading"/>
 </div>
 </template>
 
@@ -77,9 +78,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceSchedulesWeb',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { listVehicles, listReminders, updateReminder, getPreferences } = useCarMaintenance()
@@ -91,6 +96,16 @@ export default {
         const errorMessage = ref('')
         const distanceUnit = ref('km')
         let searchTimer = null
+        const overlayActive = ref(false)
+
+        const withOverlay = async(fn) => {
+            overlayActive.value = true
+            try {
+                return await fn()
+            } finally {
+                overlayActive.value = false
+            }
+        }
 
         const formatDate = (value) => {
             if (!value) return 'No date'
@@ -134,38 +149,42 @@ export default {
         }
 
         const loadPreferences = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) return
-                const prefs = await getPreferences(token)
-                if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
-            } catch (err) {
-                distanceUnit.value = 'km'
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    const prefs = await getPreferences(token)
+                    if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+                } catch (err) {
+                    distanceUnit.value = 'km'
+                }
+            })
         }
 
         const loadVehicles = async() => {
             loading.value = true
             errorMessage.value = ''
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-                if (!vehicles.value.length) {
-                    selectedVehicleId.value = ''
-                    reminders.value = []
-                    return
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                    if (!vehicles.value.length) {
+                        selectedVehicleId.value = ''
+                        reminders.value = []
+                        return
+                    }
+                    const stored = localStorage.getItem('selectedVehicleId')
+                    const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
+                    selectedVehicleId.value = preferred.id
+                    await loadReminders()
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
+                } finally {
+                    loading.value = false
                 }
-                const stored = localStorage.getItem('selectedVehicleId')
-                const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
-                selectedVehicleId.value = preferred.id
-                await loadReminders()
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            } finally {
-                loading.value = false
-            }
+            })
         }
 
         const loadReminders = async() => {
@@ -174,15 +193,17 @@ export default {
                 return
             }
             loading.value = true
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                reminders.value = await listReminders(token, selectedVehicleId.value)
-            } catch (err) {
-                reminders.value = []
-            } finally {
-                loading.value = false
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    reminders.value = await listReminders(token, selectedVehicleId.value)
+                } catch (err) {
+                    reminders.value = []
+                } finally {
+                    loading.value = false
+                }
+            })
         }
 
         const filteredReminders = computed(() => {
@@ -192,6 +213,8 @@ export default {
                 return [r.maintenanceType, r.title, r.description].filter(Boolean).some(f => String(f).toLowerCase().includes(term))
             })
         })
+        const showLoading = computed(() => loading.value || overlayActive.value)
+        const showLoading = computed(() => loading.value)
 
         const handleVehicleChange = async() => {
             localStorage.setItem('selectedVehicleId', selectedVehicleId.value)
@@ -205,14 +228,16 @@ export default {
 
         const toggleStatus = async(reminder) => {
             if (!reminder?.id) return
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const updated = await updateReminder(token, reminder.id, { completed: !reminder.completed })
-                reminders.value = reminders.value.map(r => r.id === reminder.id ? updated : r)
-            } catch (err) {
-                alert(err?.message || 'Unable to update status')
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const updated = await updateReminder(token, reminder.id, { completed: !reminder.completed })
+                    reminders.value = reminders.value.map(r => r.id === reminder.id ? updated : r)
+                } catch (err) {
+                    alert(err?.message || 'Unable to update status')
+                }
+            })
         }
 
         const goHome = () => router.push('/')
@@ -225,8 +250,10 @@ export default {
         }
 
         onMounted(async() => {
-            await loadPreferences()
-            await loadVehicles()
+            await withOverlay(async() => {
+                await loadPreferences()
+                await loadVehicles()
+            })
         })
 
         return {
@@ -251,7 +278,8 @@ export default {
             errorMessage,
             goAddSchedule,
             distanceUnit,
-            displayName
+            displayName,
+            showLoading
         }
     }
 }

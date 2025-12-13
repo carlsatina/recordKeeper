@@ -70,6 +70,7 @@
             </div>
         </div>
     </main>
+    <Loading v-if="showLoading"/>
 </div>
 </template>
 
@@ -77,11 +78,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 const palette = ['#f472b6', '#6f6cf7', '#34d399', '#f59e0b', '#60a5fa', '#9ca3af']
 
 export default {
     name: 'CarMaintenanceReportWeb',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { listVehicles, listMaintenanceRecords, getPreferences } = useCarMaintenance()
@@ -92,6 +97,18 @@ export default {
         const loading = ref(false)
         const errorMessage = ref('')
         const defaultCurrency = ref('USD')
+        const overlayActive = ref(false)
+        const showLoading = computed(() => loading.value || overlayActive.value)
+
+        const withOverlay = async(fn) => {
+            overlayActive.value = true
+            try {
+                return await fn()
+            } finally {
+                overlayActive.value = false
+            }
+        }
+        const showLoading = computed(() => loading.value)
 
         const displayName = (vehicle) => {
             if (!vehicle) return 'Vehicle'
@@ -137,38 +154,42 @@ export default {
         })
 
         const loadPreferences = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) return
-                const prefs = await getPreferences(token)
-                if (prefs?.currency) defaultCurrency.value = prefs.currency
-            } catch (err) {
-                defaultCurrency.value = 'USD'
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    const prefs = await getPreferences(token)
+                    if (prefs?.currency) defaultCurrency.value = prefs.currency
+                } catch (err) {
+                    defaultCurrency.value = 'USD'
+                }
+            })
         }
 
         const loadVehicles = async() => {
             loading.value = true
             errorMessage.value = ''
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-                if (!vehicles.value.length) {
-                    selectedVehicleId.value = ''
-                    records.value = []
-                    return
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                    if (!vehicles.value.length) {
+                        selectedVehicleId.value = ''
+                        records.value = []
+                        return
+                    }
+                    const stored = localStorage.getItem('selectedVehicleId')
+                    const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
+                    selectedVehicleId.value = preferred.id
+                    await loadRecords()
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
+                } finally {
+                    loading.value = false
                 }
-                const stored = localStorage.getItem('selectedVehicleId')
-                const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
-                selectedVehicleId.value = preferred.id
-                await loadRecords()
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            } finally {
-                loading.value = false
-            }
+            })
         }
 
         const loadRecords = async() => {
@@ -177,17 +198,19 @@ export default {
                 return
             }
             loading.value = true
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const params = new URLSearchParams()
-                params.append('vehicleId', selectedVehicleId.value)
-                records.value = await listMaintenanceRecords(token, selectedVehicleId.value, params)
-            } catch (err) {
-                records.value = []
-            } finally {
-                loading.value = false
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const params = new URLSearchParams()
+                    params.append('vehicleId', selectedVehicleId.value)
+                    records.value = await listMaintenanceRecords(token, selectedVehicleId.value, params)
+                } catch (err) {
+                    records.value = []
+                } finally {
+                    loading.value = false
+                }
+            })
         }
 
         const handleVehicleChange = async() => {
@@ -201,8 +224,10 @@ export default {
         const goSettings = () => router.push('/car-maintenance/settings')
 
         onMounted(async() => {
-            await loadPreferences()
-            await loadVehicles()
+            await withOverlay(async() => {
+                await loadPreferences()
+                await loadVehicles()
+            })
         })
 
         return {
@@ -220,7 +245,8 @@ export default {
             loading,
             errorMessage,
             displayName,
-            defaultCurrency
+            defaultCurrency,
+            showLoading
         }
 }
 }

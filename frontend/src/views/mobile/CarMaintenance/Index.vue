@@ -131,6 +131,7 @@
             <span>Settings</span>
         </button>
     </nav>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -139,9 +140,13 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: "CarMaintenanceMobile",
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const showOdometerModal = ref(false)
@@ -155,6 +160,7 @@ export default {
         const searchTerm = ref('')
         const showVehiclePicker = ref(false)
         const loading = ref(false)
+        const loadingOverlay = ref(false)
         const errorMessage = ref('')
         const distanceUnit = ref('km')
 
@@ -186,17 +192,28 @@ export default {
             if (!selectedVehicle.value) return
             savingOdometer.value = true
             try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const payload = new FormData()
-                payload.append('currentMileage', odometerInput.value || '0')
-                await updateVehicle(token, selectedVehicle.value.id, payload)
-                selectedVehicle.value.currentMileage = Number(odometerInput.value) || 0
-                showOdometerModal.value = false
+                await withOverlay(async() => {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const payload = new FormData()
+                    payload.append('currentMileage', odometerInput.value || '0')
+                    await updateVehicle(token, selectedVehicle.value.id, payload)
+                    selectedVehicle.value.currentMileage = Number(odometerInput.value) || 0
+                    showOdometerModal.value = false
+                })
             } catch (err) {
                 alert(err?.message || 'Unable to update odometer')
             } finally {
                 savingOdometer.value = false
+            }
+        }
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
             }
         }
 
@@ -261,27 +278,29 @@ export default {
 
         const loadVehicles = async() => {
             errorMessage.value = ''
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const data = await listVehicles(token)
-                vehicles.value = data
-                const preferred = data.find(v => v.id === selectedVehicleId.value)
-                const targetId = preferred ? preferred.id : data[0]?.id || ''
-                selectedVehicleId.value = targetId
-                if (targetId) {
-                    localStorage.setItem('selectedVehicleId', targetId)
-                    await loadMaintenanceRecords(targetId, searchTerm.value)
-                } else {
-                    localStorage.removeItem('selectedVehicleId')
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const data = await listVehicles(token)
+                    vehicles.value = data
+                    const preferred = data.find(v => v.id === selectedVehicleId.value)
+                    const targetId = preferred ? preferred.id : data[0]?.id || ''
+                    selectedVehicleId.value = targetId
+                    if (targetId) {
+                        localStorage.setItem('selectedVehicleId', targetId)
+                        await loadMaintenanceRecords(targetId, searchTerm.value)
+                    } else {
+                        localStorage.removeItem('selectedVehicleId')
+                        maintenanceRecords.value = []
+                        router.push('/car-maintenance/vehicles')
+                    }
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
                     maintenanceRecords.value = []
-                    router.push('/car-maintenance/vehicles')
                 }
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-                maintenanceRecords.value = []
-            }
+            })
         }
 
         const loadMaintenanceRecords = async(vehicleId, search = '') => {
@@ -313,7 +332,7 @@ export default {
             selectedVehicleId.value = vehicleId
             showVehiclePicker.value = false
             localStorage.setItem('selectedVehicleId', vehicleId)
-            await loadMaintenanceRecords(vehicleId, searchTerm.value)
+            await withOverlay(() => loadMaintenanceRecords(vehicleId, searchTerm.value))
         }
 
         const loadPreferences = async() => {
@@ -337,7 +356,7 @@ export default {
             if (searchTimer) clearTimeout(searchTimer)
             searchTimer = setTimeout(() => {
                 if (selectedVehicleId.value) {
-                    loadMaintenanceRecords(selectedVehicleId.value, searchTerm.value)
+                    withOverlay(() => loadMaintenanceRecords(selectedVehicleId.value, searchTerm.value))
                 }
             }, 300)
         }
@@ -374,6 +393,7 @@ export default {
             selectVehicle,
             selectedVehicleId,
             loading,
+            loadingOverlay,
             errorMessage,
             displayName,
             distanceUnit,

@@ -96,6 +96,7 @@
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
         <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     </form>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -104,9 +105,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/constants/config'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceAddVehicleMobile',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const route = useRoute()
@@ -133,9 +138,19 @@ export default {
         const isEditing = ref(false)
         const editingId = ref('')
         const existingImageUrl = ref('')
+        const loadingOverlay = ref(false)
 
         const goBack = () => router.push('/')
         const goBackPage = () => router.back()
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
 
         const triggerFileInput = () => {
             if (fileInput.value) {
@@ -195,33 +210,35 @@ export default {
         }
 
         const loadVehicle = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                const id = route.params.id || route.query.vehicleId
-                if (!token || !id) return
-                const vehicle = await getVehicle(token, id)
-                editingId.value = vehicle.id
-                isEditing.value = true
-                form.value = {
-                    make: vehicle.make || '',
-                    model: vehicle.model || '',
-                    year: vehicle.year || '',
-                    color: vehicle.color || '',
-                    licensePlate: vehicle.licensePlate || '',
-                    registrationExpiryDate: vehicle.registrationExpiryDate ? vehicle.registrationExpiryDate.split('T')[0] : '',
-                    vin: vehicle.vin || '',
-                    vehicleType: vehicle.vehicleType || 'CAR',
-                    purchaseDate: vehicle.purchaseDate ? vehicle.purchaseDate.split('T')[0] : '',
-                    currentMileage: vehicle.currentMileage || '',
-                    notes: vehicle.notes || ''
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    const id = route.params.id || route.query.vehicleId
+                    if (!token || !id) return
+                    const vehicle = await getVehicle(token, id)
+                    editingId.value = vehicle.id
+                    isEditing.value = true
+                    form.value = {
+                        make: vehicle.make || '',
+                        model: vehicle.model || '',
+                        year: vehicle.year || '',
+                        color: vehicle.color || '',
+                        licensePlate: vehicle.licensePlate || '',
+                        registrationExpiryDate: vehicle.registrationExpiryDate ? vehicle.registrationExpiryDate.split('T')[0] : '',
+                        vin: vehicle.vin || '',
+                        vehicleType: vehicle.vehicleType || 'CAR',
+                        purchaseDate: vehicle.purchaseDate ? vehicle.purchaseDate.split('T')[0] : '',
+                        currentMileage: vehicle.currentMileage || '',
+                        notes: vehicle.notes || ''
+                    }
+                    if (vehicle.imageUrl) {
+                        existingImageUrl.value = vehicle.imageUrl
+                        imagePreview.value = vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`
+                    }
+                } catch (err) {
+                    console.error(err)
                 }
-                if (vehicle.imageUrl) {
-                    existingImageUrl.value = vehicle.imageUrl
-                    imagePreview.value = vehicle.imageUrl.startsWith('http') ? vehicle.imageUrl : `${API_BASE_URL}${vehicle.imageUrl}`
-                }
-            } catch (err) {
-                console.error(err)
-            }
+            })
         }
 
         const submitVehicle = async() => {
@@ -229,33 +246,35 @@ export default {
             successMessage.value = ''
             submitting.value = true
             try {
-                const token = localStorage.getItem('token')
-                if (!token) {
-                    throw new Error('You must be logged in.')
-                }
-                const payload = new FormData()
-                Object.entries(form.value).forEach(([key, value]) => {
-                    if (value !== null && value !== undefined && value !== '') {
-                        payload.append(key, value)
+                await withOverlay(async() => {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        throw new Error('You must be logged in.')
                     }
+                    const payload = new FormData()
+                    Object.entries(form.value).forEach(([key, value]) => {
+                        if (value !== null && value !== undefined && value !== '') {
+                            payload.append(key, value)
+                        }
+                    })
+                    if (!imageFile.value && existingImageUrl.value) {
+                        payload.append('imageUrl', existingImageUrl.value)
+                    }
+                    if (imageFile.value) {
+                        const compressed = await compressImage(imageFile.value)
+                        payload.append('image', compressed)
+                    }
+                    if (isEditing.value && editingId.value) {
+                        await updateVehicle(token, editingId.value, payload)
+                        successMessage.value = 'Vehicle updated successfully'
+                    } else {
+                        await createVehicle(token, payload)
+                        successMessage.value = 'Vehicle added successfully'
+                    }
+                    setTimeout(() => {
+                        router.push('/car-maintenance/vehicles')
+                    }, 600)
                 })
-                if (!imageFile.value && existingImageUrl.value) {
-                    payload.append('imageUrl', existingImageUrl.value)
-                }
-                if (imageFile.value) {
-                    const compressed = await compressImage(imageFile.value)
-                    payload.append('image', compressed)
-                }
-                if (isEditing.value && editingId.value) {
-                    await updateVehicle(token, editingId.value, payload)
-                    successMessage.value = 'Vehicle updated successfully'
-                } else {
-                    await createVehicle(token, payload)
-                    successMessage.value = 'Vehicle added successfully'
-                }
-                setTimeout(() => {
-                    router.push('/car-maintenance/vehicles')
-                }, 600)
             } catch (err) {
                 errorMessage.value = err?.message || 'Something went wrong'
             } finally {
@@ -279,7 +298,8 @@ export default {
             triggerFileInput,
             handleFileChange,
             submitVehicle,
-            isEditing
+            isEditing,
+            loadingOverlay
         }
     }
 }

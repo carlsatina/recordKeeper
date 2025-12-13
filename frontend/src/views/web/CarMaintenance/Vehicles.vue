@@ -53,6 +53,7 @@
             </div>
         </div>
     </main>
+    <Loading v-if="showLoading"/>
 </div>
 </template>
 
@@ -61,9 +62,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceVehiclesWeb',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { listVehicles } = useCarMaintenance()
@@ -95,6 +100,7 @@ export default {
                 return name.includes(term) || plate.includes(term)
             })
         })
+        const showLoading = computed(() => loading.value)
 
         const displayName = (vehicle) => {
             const parts = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean)
@@ -133,7 +139,8 @@ export default {
             goSchedules,
             goReport,
             goSettings,
-            API_BASE_URL
+            API_BASE_URL,
+            showLoading
         }
     }
 }

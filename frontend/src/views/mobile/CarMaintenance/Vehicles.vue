@@ -100,6 +100,7 @@
             <span>Settings</span>
         </button>
     </nav>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -108,9 +109,13 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceVehiclesMobile',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { listVehicles } = useCarMaintenance()
@@ -118,6 +123,7 @@ export default {
         const vehicles = ref([])
         const errorMessage = ref('')
         const openMenuId = ref('')
+        const loadingOverlay = ref(false)
 
         const goBack = () => router.push('/')
         const goHome = () => router.push('/')
@@ -127,6 +133,15 @@ export default {
         const goReport = () => router.push('/car-maintenance/report')
         const addVehicle = () => router.push('/car-maintenance/vehicles/add')
 
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
+
         const openDetail = (id) => {
             if (!id) return
             router.push(`/car-maintenance/vehicles/${id}`)
@@ -134,14 +149,16 @@ export default {
 
         const loadVehicles = async() => {
             errorMessage.value = ''
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
+                }
+            })
         }
 
         const filteredVehicles = computed(() => {
@@ -181,7 +198,8 @@ export default {
             formatExpiry,
             openDetail,
             addVehicle,
-            API_BASE_URL
+            API_BASE_URL,
+            loadingOverlay
         }
     }
 }

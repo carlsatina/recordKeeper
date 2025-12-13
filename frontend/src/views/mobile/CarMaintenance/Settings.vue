@@ -92,6 +92,7 @@
             <span>Settings</span>
         </button>
     </nav>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -99,10 +100,14 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 import store from '@/store'
 export default {
     name: 'CarMaintenanceSettingsMobile',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { getPreferences, savePreferences } = useCarMaintenance()
@@ -127,6 +132,16 @@ export default {
         const currency = ref('USD')
         const maintenanceTypes = ref([...defaultMaintenanceTypes])
         const newMaintenanceType = ref('')
+        const loadingOverlay = ref(false)
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
 
         const goBack = () => router.back()
         const goHome = () => router.push('/')
@@ -134,20 +149,22 @@ export default {
         const goVehicles = () => router.push('/car-maintenance/vehicles')
 
         const persistPreferences = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                await savePreferences(token, {
-                    distanceUnit: distanceUnit.value,
-                    currency: currency.value,
-                    maintenanceTypes: maintenanceTypes.value
-                })
-            } catch (err) {
-                // fallback to local storage
-                localStorage.setItem('distanceUnit', distanceUnit.value)
-                localStorage.setItem('currencyPreference', currency.value)
-                localStorage.setItem('maintenanceTypes', JSON.stringify(maintenanceTypes.value))
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    await savePreferences(token, {
+                        distanceUnit: distanceUnit.value,
+                        currency: currency.value,
+                        maintenanceTypes: maintenanceTypes.value
+                    })
+                } catch (err) {
+                    // fallback to local storage
+                    localStorage.setItem('distanceUnit', distanceUnit.value)
+                    localStorage.setItem('currencyPreference', currency.value)
+                    localStorage.setItem('maintenanceTypes', JSON.stringify(maintenanceTypes.value))
+                }
+            })
         }
 
         const addMaintenanceType = () => {
@@ -168,21 +185,23 @@ export default {
         onMounted(async() => {
             userName.value = store.state.userProfile?.fullName
             userEmail.value = store.state.userProfile?.email
-            try {
-                const token = localStorage.getItem('token')
-                if (token) {
-                    const prefs = await getPreferences(token)
-                    if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
-                    if (prefs?.currency) currency.value = prefs.currency
-                    if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
-                        maintenanceTypes.value = prefs.maintenanceTypes
-                    } else {
-                        maintenanceTypes.value = [...defaultMaintenanceTypes]
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (token) {
+                        const prefs = await getPreferences(token)
+                        if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+                        if (prefs?.currency) currency.value = prefs.currency
+                        if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                            maintenanceTypes.value = prefs.maintenanceTypes
+                        } else {
+                            maintenanceTypes.value = [...defaultMaintenanceTypes]
+                        }
                     }
+                } catch (err) {
+                    maintenanceTypes.value = [...defaultMaintenanceTypes]
                 }
-            } catch (err) {
-                maintenanceTypes.value = [...defaultMaintenanceTypes]
-            }
+            })
         })
 
         return {
@@ -198,7 +217,8 @@ export default {
             newMaintenanceType,
             addMaintenanceType,
             removeType,
-            persistPreferences
+            persistPreferences,
+            loadingOverlay
         }
     }
 }

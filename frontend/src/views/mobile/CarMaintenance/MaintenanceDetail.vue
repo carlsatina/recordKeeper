@@ -80,6 +80,7 @@
             </div>
         </div>
     </transition>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -88,9 +89,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/constants/config'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'MaintenanceDetailMobile',
+    components: {
+        Loading
+    },
     setup() {
         const route = useRoute()
         const router = useRouter()
@@ -99,6 +104,17 @@ export default {
         const record = ref(null)
         const vehicles = ref([])
         const confirmDelete = ref(false)
+        const loading = ref(true)
+        const loadingOverlay = ref(false)
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
 
         const vehicleName = computed(() => {
             if (!record.value) return ''
@@ -142,16 +158,21 @@ export default {
             const token = localStorage.getItem('token')
             const id = route.params.id
             if (!token || !id) return router.back()
-            try {
-                const [rec, veh] = await Promise.all([
-                    getMaintenanceRecord(token, id),
-                    listVehicles(token)
-                ])
-                record.value = rec
-                vehicles.value = veh
-            } catch (err) {
-                router.back()
-            }
+            loading.value = true
+            await withOverlay(async() => {
+                try {
+                    const [rec, veh] = await Promise.all([
+                        getMaintenanceRecord(token, id),
+                        listVehicles(token)
+                    ])
+                    record.value = rec
+                    vehicles.value = veh
+                } catch (err) {
+                    router.back()
+                } finally {
+                    loading.value = false
+                }
+            })
         }
 
         const goBack = () => {
@@ -169,12 +190,14 @@ export default {
             if (!record.value) return
             const token = localStorage.getItem('token')
             if (!token) return
-            try {
-                await deleteMaintenanceRecord(token, record.value.id)
-                router.push('/car-maintenance')
-            } catch (err) {
-                console.error(err)
-            }
+            await withOverlay(async() => {
+                try {
+                    await deleteMaintenanceRecord(token, record.value.id)
+                    router.push('/car-maintenance')
+                } catch (err) {
+                    console.error(err)
+                }
+            })
         }
 
         onMounted(() => {
@@ -191,7 +214,9 @@ export default {
             goBack,
             editRecord,
             deleteRecord,
-            confirmDelete
+            confirmDelete,
+            loading,
+            loadingOverlay
         }
     }
 }

@@ -234,6 +234,7 @@
             </div>
         </section>
     </main>
+    <Loading v-if="showLoading"/>
 </div>
 </template>
 
@@ -243,11 +244,15 @@ import { useRouter } from 'vue-router'
 import store from '@/store'
 import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
+import Loading from '@/components/Loading.vue'
 
 const palette = ['#f472b6', '#6f6cf7', '#34d399', '#f59e0b', '#60a5fa', '#9ca3af']
 
 export default {
     name: "CarMaintenanceWeb",
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const {
@@ -268,6 +273,7 @@ export default {
         const vehicleSearch = ref('')
         const loading = ref(false)
         const loadingReminders = ref(false)
+        const overlayActive = ref(false)
         const errorMessage = ref('')
         const distanceUnit = ref('km')
         const defaultCurrency = ref('USD')
@@ -281,6 +287,15 @@ export default {
         let scheduleTimer = null
 
         const currentTab = ref('home')
+
+        const withOverlay = async(fn) => {
+            overlayActive.value = true
+            try {
+                return await fn()
+            } finally {
+                overlayActive.value = false
+            }
+        }
 
         const setTab = (tab) => {
             currentTab.value = tab
@@ -318,45 +333,49 @@ export default {
         }
 
         const loadPreferences = async() => {
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) return
-                const prefs = await getPreferences(token)
-                if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
-                if (prefs?.currency) defaultCurrency.value = prefs.currency
-                if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
-                    maintenanceTypes.value = prefs.maintenanceTypes
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    const prefs = await getPreferences(token)
+                    if (prefs?.distanceUnit) distanceUnit.value = prefs.distanceUnit
+                    if (prefs?.currency) defaultCurrency.value = prefs.currency
+                    if (Array.isArray(prefs?.maintenanceTypes) && prefs.maintenanceTypes.length) {
+                        maintenanceTypes.value = prefs.maintenanceTypes
+                    }
+                } catch (err) {
+                    distanceUnit.value = 'km'
+                    defaultCurrency.value = 'USD'
                 }
-            } catch (err) {
-                distanceUnit.value = 'km'
-                defaultCurrency.value = 'USD'
-            }
+            })
         }
 
         const loadVehicles = async() => {
             loading.value = true
             errorMessage.value = ''
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                vehicles.value = await listVehicles(token)
-                if (!vehicles.value.length) {
-                    selectedVehicleId.value = ''
-                    maintenanceRecords.value = []
-                    reminders.value = []
-                    return
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    vehicles.value = await listVehicles(token)
+                    if (!vehicles.value.length) {
+                        selectedVehicleId.value = ''
+                        maintenanceRecords.value = []
+                        reminders.value = []
+                        return
+                    }
+                    const stored = localStorage.getItem('selectedVehicleId')
+                    const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
+                    selectedVehicleId.value = preferred.id
+                    await loadMaintenanceRecords()
+                    await loadReminders()
+                } catch (err) {
+                    errorMessage.value = err?.message || 'Unable to load vehicles'
+                    vehicles.value = []
+                } finally {
+                    loading.value = false
                 }
-                const stored = localStorage.getItem('selectedVehicleId')
-                const preferred = vehicles.value.find(v => v.id === stored) || vehicles.value[0]
-                selectedVehicleId.value = preferred.id
-                await loadMaintenanceRecords()
-                await loadReminders()
-            } catch (err) {
-                errorMessage.value = err?.message || 'Unable to load vehicles'
-                vehicles.value = []
-            } finally {
-                loading.value = false
-            }
+            })
         }
 
         const loadMaintenanceRecords = async() => {
@@ -365,18 +384,20 @@ export default {
                 return
             }
             loading.value = true
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const params = new URLSearchParams()
-                params.append('vehicleId', selectedVehicleId.value)
-                if (searchTerm.value.trim()) params.append('search', searchTerm.value.trim())
-                maintenanceRecords.value = await listMaintenanceRecords(token, selectedVehicleId.value, params)
-            } catch (err) {
-                maintenanceRecords.value = []
-            } finally {
-                loading.value = false
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const params = new URLSearchParams()
+                    params.append('vehicleId', selectedVehicleId.value)
+                    if (searchTerm.value.trim()) params.append('search', searchTerm.value.trim())
+                    maintenanceRecords.value = await listMaintenanceRecords(token, selectedVehicleId.value, params)
+                } catch (err) {
+                    maintenanceRecords.value = []
+                } finally {
+                    loading.value = false
+                }
+            })
         }
 
         const loadReminders = async() => {
@@ -385,15 +406,17 @@ export default {
                 return
             }
             loadingReminders.value = true
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                reminders.value = await listReminders(token, selectedVehicleId.value)
-            } catch (err) {
-                reminders.value = []
-            } finally {
-                loadingReminders.value = false
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    reminders.value = await listReminders(token, selectedVehicleId.value)
+                } catch (err) {
+                    reminders.value = []
+                } finally {
+                    loadingReminders.value = false
+                }
+            })
         }
 
         const handleVehicleChange = async() => {
@@ -440,6 +463,7 @@ export default {
                 return [r.maintenanceType, r.title, r.description].filter(Boolean).some(f => String(f).toLowerCase().includes(term))
             })
         })
+        const showLoading = computed(() => loading.value || loadingReminders.value || overlayActive.value)
 
         const statusFor = (reminder) => {
             const now = new Date()
@@ -469,14 +493,16 @@ export default {
 
         const toggleStatus = async(reminder) => {
             if (!reminder?.id) return
-            try {
-                const token = localStorage.getItem('token')
-                if (!token) throw new Error('You must be logged in.')
-                const updated = await updateReminder(token, reminder.id, { completed: !reminder.completed })
-                reminders.value = reminders.value.map(r => r.id === reminder.id ? updated : r)
-            } catch (err) {
-                alert(err?.message || 'Unable to update status')
-            }
+            await withOverlay(async() => {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) throw new Error('You must be logged in.')
+                    const updated = await updateReminder(token, reminder.id, { completed: !reminder.completed })
+                    reminders.value = reminders.value.map(r => r.id === reminder.id ? updated : r)
+                } catch (err) {
+                    alert(err?.message || 'Unable to update status')
+                }
+            })
         }
 
         const filteredVehicles = computed(() => {
@@ -556,8 +582,10 @@ export default {
         }
 
         onMounted(async() => {
-            await loadPreferences()
-            await loadVehicles()
+            await withOverlay(async() => {
+                await loadPreferences()
+                await loadVehicles()
+            })
         })
 
         // const userName = computed(() => store.state.userProfile?.fullName || 'there')
@@ -612,7 +640,8 @@ export default {
             setTab,
             newMaintenanceType,
             addType,
-            removeType
+            removeType,
+            showLoading
         }
     }
 }

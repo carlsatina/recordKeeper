@@ -70,6 +70,7 @@
             <span>Settings</span>
         </button>
     </nav>
+    <Loading v-if="loadingOverlay"/>
 </div>
 </template>
 
@@ -77,9 +78,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import Loading from '@/components/Loading.vue'
 
 export default {
     name: 'CarMaintenanceReportMobile',
+    components: {
+        Loading
+    },
     setup() {
         const router = useRouter()
         const { listVehicles, listMaintenanceRecords } = useCarMaintenance()
@@ -87,12 +92,28 @@ export default {
         const selectedVehicleId = ref(localStorage.getItem('selectedVehicleId') || '')
         const records = ref([])
         const currency = ref('USD')
+        const loadingOverlay = ref(false)
+
+        const withOverlay = async(fn) => {
+            loadingOverlay.value = true
+            try {
+                return await fn()
+            } finally {
+                loadingOverlay.value = false
+            }
+        }
 
         const goBack = () => router.push('/')
         const goHome = () => router.push('/')
         const goSchedules = () => router.push('/car-maintenance/schedules')
         const goVehicles = () => router.push('/car-maintenance/vehicles')
         const goSettings = () => router.push('/car-maintenance/settings')
+
+        const handleVehicleChange = async() => {
+            await withOverlay(async() => {
+                await loadRecords()
+            })
+        }
 
         const loadVehicles = async() => {
             try {
@@ -174,8 +195,10 @@ export default {
         }
 
         onMounted(async() => {
-            await loadVehicles()
-            await loadRecords()
+            await withOverlay(async() => {
+                await loadVehicles()
+                await loadRecords()
+            })
         })
 
         return {
@@ -191,7 +214,9 @@ export default {
             dateRange,
             formatCurrency,
             currency,
-            segmentStyle
+            segmentStyle,
+            loadingOverlay,
+            handleVehicleChange
         }
     }
 }

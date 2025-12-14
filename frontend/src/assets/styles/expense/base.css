@@ -39,6 +39,36 @@
   box-shadow: none;
 }
 
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+}
+
+.profile-hero .avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #0b1020;
+  box-shadow: 0 12px 28px rgba(6, 182, 212, 0.28);
+}
+
+.profile-hero .profile-meta {
+  flex: 1;
+}
+
+.profile-hero .profile-name {
+  margin: 2px 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
 .expense-theme .icon-btn.small.danger {
   color: #e11d48;
 }

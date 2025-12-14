@@ -1,5 +1,5 @@
 <template>
-<div class="page expense-theme">
+<div class="page expense-theme stagger-page" :class="{ 'stagger-ready': pageReady }">
     <header class="top-nav">
         <button class="icon-btn" @click="router.push('/')">
             <mdicon name="home-outline" size="24" />
@@ -16,13 +16,13 @@
 
     <!-- HOME TAB -->
     <main class="content" v-if="activeTab === 'home'">
-        <section class="summary-grid">
-            <div class="card primary">
+        <section class="summary-grid stagger-seq">
+            <div class="card primary slide-up">
                 <p class="label">This month</p>
                 <h2>{{ formatMoney(defaultCurrency, currentMonthTotal) }}</h2>
                 <p class="sub">{{ monthChangeLabel }}</p>
             </div>
-            <div class="card budget-card">
+            <div class="card budget-card slide-up">
                 <div class="budget-head">
                     <div class="label-row">
                         <p class="label">Budgets</p>
@@ -86,7 +86,7 @@
                 </div>
                 <p v-else class="sub">No budgets yet. Create one to stay on track.</p>
             </div>
-            <div class="card" @click="setTab('schedules')">
+            <div class="card slide-up" @click="setTab('schedules')">
                 <div class="row">
                     <div class="d-flex flex-row justify-content-between">
                         <p class="label">Subscriptions</p>
@@ -148,7 +148,7 @@
 
     <!-- SCHEDULES TAB -->
     <main class="content" v-else-if="activeTab === 'schedules'">
-        <section class="hero-schedules">
+        <section class="hero-schedules slide-up">
             <div>
                 <p class="eyebrow">Upcoming</p>
                 <h2>{{ formatMoney(defaultCurrency, scheduleTotal) }}</h2>
@@ -160,7 +160,7 @@
             </button>
         </section>
 
-        <section class="section schedule-toggle">
+        <section class="section schedule-toggle slide-up">
             <button
                 class="toggle-pill"
                 :class="{ active: scheduleFilter === 'subscriptions' }"
@@ -177,8 +177,8 @@
             </button>
         </section>
 
-        <section class="section schedule-list">
-            <div class="schedule-card" v-for="item in filteredSchedules" :key="item.id">
+        <section class="section schedule-list stagger-seq">
+            <div class="schedule-card slide-up" v-for="item in filteredSchedules" :key="item.id">
                 <div class="row schedule-row">
                     <div class="badge" :class="item.badgeClass">{{ item.when }}</div>
                     <div class="schedule-right">
@@ -223,7 +223,7 @@
 
     <!-- TRANSACTIONS TAB -->
     <main class="content" v-else-if="activeTab === 'transactions'">
-        <section class="transactions-header">
+        <section class="transactions-header slide-up">
             <transition name="month-slide-nav" mode="out-in">
                 <div class="months" :key="viewMonthKey" @touchstart="onMonthTouchStart" @touchend="onMonthTouchEnd">
                     <span class="month muted" @click="changeMonth(-1)">{{ monthLabel(-1) }}</span>
@@ -231,7 +231,7 @@
                     <span class="month muted" @click="changeMonth(1)">{{ monthLabel(1) }}</span>
                 </div>
             </transition>
-            <div class="filter-row pill-row">
+            <div class="filter-row pill-row slide-up">
                 <button
                     type="button"
                     class="pill-option compact"
@@ -255,8 +255,8 @@
             </div>
         </section>
         <transition name="month-slide" mode="out-in">
-            <div class="transactions-pane" :key="viewMonthKey">
-                <div v-if="budgetSummaryPill" class="budget-pill" @click="setTab('home')">
+            <div class="transactions-pane slide-up" :key="viewMonthKey">
+                <div v-if="budgetSummaryPill" class="budget-pill slide-up" @click="setTab('home')">
                     <div>
                         <p class="micro muted">Budget status</p>
                         <p class="item-title">
@@ -268,9 +268,9 @@
                     </div>
                 </div>
 
-                <section class="transactions-list section" v-if="transactionsForMonth.length > 0">
-                    <transition-group name="month-slide" tag="div">
-                        <div class="item compact-item mt-1 swipeable" v-for="exp in transactionsForMonth" :key="exp.id">
+                <section class="transactions-list section stagger-seq" v-if="transactionsForMonth.length > 0">
+                    <transition-group name="list-fade" tag="div">
+                        <div class="item compact-item mt-1 swipeable slide-up" v-for="exp in transactionsForMonth" :key="exp.id">
                             <div class="icon-circle"
                                 :style="{
                                     background: exp.categoryColor || 'var(--text-primary)',
@@ -320,7 +320,7 @@
                         <p class="sub">{{ transactionsForMonth.length }} items</p>
                     </div>
                 </section>
-                <div v-else class="empty-state">
+                <div v-else class="empty-state slide-up">
                     <div class="icon-circle purple">
                         <mdicon name="file-document-outline" size="20" />
                     </div>
@@ -336,20 +336,20 @@
 
     <main class="content insights-page mt-3" v-else-if="activeTab === 'insights'">
 
-        <section class="insights-grid">
-            <div class="insight-card glow">
+        <section class="insights-grid stagger-seq">
+            <div class="insight-card glow slide-up">
                 <p class="label">Total spent</p>
                 <h3>{{ formatMoney(defaultCurrency, insightsTotal) }}</h3>
                 <p class="sub">{{ insightsCount }} transactions</p>
             </div>
-            <div class="insight-card glow purple">
+            <div class="insight-card glow purple slide-up">
                 <p class="label">Avg per day</p>
                 <h3>{{ formatMoney(defaultCurrency, insightsAvgPerDay) }}</h3>
                 <p class="sub">So far this month</p>
             </div>
         </section>
 
-        <section class="section insight-block top-category-block" v-if="topCategory">
+        <section class="section insight-block top-category-block slide-up" v-if="topCategory">
             <div class="section-head">
                 <h4>Top category</h4>
                 <span class="micro muted">Highest spend</span>
@@ -369,13 +369,13 @@
             </div>
         </section>
 
-        <section class="section insight-block" v-if="categoryBreakdown.length">
+        <section class="section insight-block slide-up" v-if="categoryBreakdown.length">
             <div class="section-head">
                 <h4>By category</h4>
                 <span class="micro muted">{{ categoryBreakdown.length }} categories</span>
             </div>
-            <div class="category-list">
-                <div class="cat-row" v-for="cat in categoryBreakdown" :key="cat.id || cat.name">
+            <transition-group name="list-fade" tag="div" class="category-list stagger-seq">
+                <div class="cat-row slide-up" v-for="cat in categoryBreakdown" :key="cat.id || cat.name">
                     <div class="icon-circle" :style="{ background: cat.color || 'var(--text-primary)', color: cat.color ? '#fff' : '#0f172a' }">
                         <mdicon :name="cat.icon || 'label-outline'" size="18" />
                     </div>
@@ -388,19 +388,19 @@
                     </div>
                     <div class="cat-percent">{{ cat.percentLabel }}</div>
                 </div>
-            </div>
+            </transition-group>
         </section>
 
-        <section class="section insight-block">
+        <section class="section insight-block slide-up">
             <div class="section-head">
                 <h4>Weekly spend</h4>
                 <span class="micro muted">Last 7 days</span>
             </div>
-            <div class="week-bars">
+            <div class="week-bars stagger-seq">
                 <div
                     v-for="(day, idx) in weeklySeries"
                     :key="idx"
-                    class="week-bar"
+                    class="week-bar slide-up"
                 >
                     <div class="bar-track">
                         <div class="bar-fill" :style="{ height: day.percent, background: '#4f46e5' }"></div>
@@ -413,21 +413,22 @@
     </main>
 
     <main class="content" v-else-if="activeTab === 'profile'">
-        <section class="profile-hero">
-            <div class="avatar">
+        <section class="profile-hero slide-up">
+            <div class="avatar pill pop-in">
                 <span>{{ userInitials }}</span>
             </div>
             <div class="profile-meta">
-                <h3>{{ userName || 'User' }}</h3>
+                <p class="eyebrow muted">Profile</p>
+                <h3 class="profile-name">{{ userName || 'User' }}</h3>
                 <p class="sub">{{ userEmail || 'Welcome back' }}</p>
             </div>
-            <button class="icon-btn ghost">
+            <button class="icon-btn ghost" aria-label="Edit profile">
                 <mdicon name="pencil-outline" size="20" />
             </button>
         </section>
 
-        <section class="section profile-cards">
-            <div class="card profile-card">
+        <section class="section profile-cards stagger-seq">
+            <div class="card profile-card slide-up">
                 <div class="row">
                     <div>
                         <p class="label">Expense categories</p>
@@ -457,7 +458,7 @@
                 </div>
             </div>
 
-            <div class="card profile-card">
+            <div class="card profile-card slide-up">
                 <div class="row">
                     <div>
                         <p class="label">Currency & accounts</p>
@@ -490,7 +491,7 @@
                 </div>
             </div>
 
-            <div class="card profile-card">
+            <div class="card profile-card slide-up">
                 <div class="row">
                     <div>
                         <p class="label">Alerts & reminders</p>
@@ -517,7 +518,7 @@
         </div>
     </div>
 
-            <div class="card profile-card">
+            <div class="card profile-card slide-up">
                 <div class="row">
                     <div>
                         <p class="label">Manage budgets</p>
@@ -549,7 +550,7 @@
                 <p v-else class="sub">Create a budget to get started.</p>
             </div>
 
-            <div class="card profile-card danger">
+            <div class="card profile-card danger slide-up">
                 <div class="row">
                     <div>
                         <p class="label">Data & backup</p>
@@ -1062,6 +1063,7 @@ export default {
         const categorySheetRef = ref(null)
         const categoryActionsSentinel = ref(null)
         const categoryActionsVisible = ref(false)
+        const pageReady = ref(false)
         const openAddCategory = () => { showAddCategory.value = true }
         const closeAddCategory = () => {
             showAddCategory.value = false
@@ -2235,6 +2237,7 @@ export default {
         const userName = computed(() => store.state.userProfile?.fullName || 'User')
 
         onMounted(() => {
+            requestAnimationFrame(() => { pageReady.value = true })
             ensureProfile()
             if (activeTab.value === 'profile') {
                 loadCategories()
@@ -2292,6 +2295,7 @@ export default {
             showAddCategory,
             openAddCategory,
             closeAddCategory,
+            pageReady,
             categories,
             accounts,
             currencies,

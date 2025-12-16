@@ -196,6 +196,7 @@ import { useCarMaintenance } from '@/composables/carMaintenance'
 import { API_BASE_URL } from '@/constants/config'
 import Loading from '@/components/Loading.vue'
 import { useStaggerReady } from '@/composables/staggerReady'
+import { scheduleMaintenanceNotification, cancelReminderNotifications, ensureLocalNotificationPermission } from '@/composables/localNotifications'
 
 export default {
     name: 'CarMaintenanceSchedulesMobile',
@@ -241,6 +242,7 @@ export default {
         const showDeleteModal = ref(false)
         const loadingOverlay = ref(false)
         const staggerReady = useStaggerReady()
+        const notificationReady = ref(false)
 
         const withOverlay = async(fn) => {
             loadingOverlay.value = true
@@ -338,7 +340,22 @@ export default {
                 try {
                     const token = localStorage.getItem('token')
                     if (!token) throw new Error('You must be logged in.')
-                    reminders.value = await listReminders(token, selectedVehicleId.value)
+                    const list = await listReminders(token, selectedVehicleId.value)
+                    reminders.value = list
+                    if (notificationReady.value) {
+                        for (const reminder of list) {
+                            if (reminder.completed) {
+                                await cancelReminderNotifications(reminder.id)
+                            } else if (reminder.dueDate) {
+                                await scheduleMaintenanceNotification({
+                                    id: reminder.id,
+                                    title: reminder.maintenanceType || reminder.title,
+                                    vehicleName: selectedVehicle.value ? displayName(selectedVehicle.value) : '',
+                                    dueDate: reminder.dueDate
+                                })
+                            }
+                        }
+                    }
                 } catch (err) {
                     errorMessage.value = err?.message || 'Unable to load schedules'
                     reminders.value = []
@@ -357,6 +374,18 @@ export default {
                     if (!token) throw new Error('You must be logged in.')
                     const updated = await updateReminder(token, reminder.id, { completed: !reminder.completed })
                     reminders.value = reminders.value.map(r => r.id === reminder.id ? updated : r)
+                    if (notificationReady.value) {
+                        if (updated.completed) {
+                            await cancelReminderNotifications(updated.id)
+                        } else if (updated.dueDate) {
+                            await scheduleMaintenanceNotification({
+                                id: updated.id,
+                                title: updated.maintenanceType || updated.title,
+                                vehicleName: selectedVehicle.value ? displayName(selectedVehicle.value) : '',
+                                dueDate: updated.dueDate
+                            })
+                        }
+                    }
                 })
             } catch (err) {
                 alert(err?.message || 'Unable to update status')
@@ -413,6 +442,9 @@ export default {
             })
         }
         onMounted(() => {
+            ensureLocalNotificationPermission()
+                .then((granted) => { notificationReady.value = granted })
+                .catch(() => { notificationReady.value = false })
             loadVehicles()
             loadPreferences()
         })
@@ -445,6 +477,9 @@ export default {
                     const token = localStorage.getItem('token')
                     if (!token) throw new Error('You must be logged in.')
                     await deleteReminder(token, detailReminder.value.id)
+                    if (notificationReady.value) {
+                        await cancelReminderNotifications(detailReminder.value.id)
+                    }
                     reminders.value = reminders.value.filter(r => r.id !== detailReminder.value.id)
                     showDeleteModal.value = false
                     detailReminder.value = null
@@ -508,7 +543,8 @@ export default {
             searchTerm,
             debouncedSearch,
             loadingOverlay,
-            staggerReady
+            staggerReady,
+            notificationReady
         }
     }
 }

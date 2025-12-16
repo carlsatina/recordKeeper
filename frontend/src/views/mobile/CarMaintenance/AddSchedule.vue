@@ -80,6 +80,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCarMaintenance } from '@/composables/carMaintenance'
+import { scheduleMaintenanceNotification, cancelReminderNotifications, ensureLocalNotificationPermission } from '@/composables/localNotifications'
 import Loading from '@/components/Loading.vue'
 import { useStaggerReady } from '@/composables/staggerReady'
 
@@ -161,11 +162,13 @@ export default {
             successMessage.value = ''
             submitting.value = true
             try {
+                await ensureLocalNotificationPermission()
                 await withOverlay(async() => {
                     const token = localStorage.getItem('token')
                     if (!token) throw new Error('You must be logged in.')
+                    let savedReminder = null
                     if (editingId.value) {
-                        await updateReminder(token, editingId.value, {
+                        savedReminder = await updateReminder(token, editingId.value, {
                             vehicleId: form.value.vehicleId,
                             maintenanceType: form.value.maintenanceType,
                             title: form.value.maintenanceType,
@@ -175,7 +178,7 @@ export default {
                         })
                         successMessage.value = 'Schedule updated'
                     } else {
-                        await createReminder(token, {
+                        savedReminder = await createReminder(token, {
                             vehicleId: form.value.vehicleId,
                             maintenanceType: form.value.maintenanceType,
                             title: form.value.maintenanceType,
@@ -184,6 +187,15 @@ export default {
                             dueMileage: form.value.dueMileage ? Number(form.value.dueMileage) : null
                         })
                         successMessage.value = 'Schedule saved'
+                    }
+                    if (savedReminder) {
+                        await cancelReminderNotifications(savedReminder.id)
+                        await scheduleMaintenanceNotification({
+                            id: savedReminder.id,
+                            title: savedReminder.maintenanceType || savedReminder.title,
+                            vehicleName: savedReminder.vehicle?.make ? `${savedReminder.vehicle.make} ${savedReminder.vehicle.model || ''}`.trim() : '',
+                            dueDate: savedReminder.dueDate
+                        })
                     }
                     setTimeout(() => router.push('/car-maintenance/schedules'), 400)
                 })

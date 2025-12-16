@@ -14,6 +14,14 @@ type ReminderInput = {
     intakeMethod?: string
 }
 
+type MaintenanceReminderInput = {
+    id: string | number
+    title?: string
+    vehicleName?: string
+    dueDate?: string | Date
+    time?: string
+}
+
 const isNativePlatform = () => Capacitor.getPlatform() !== 'web'
 
 const parseTime = (value?: string) => {
@@ -22,6 +30,13 @@ const parseTime = (value?: string) => {
         hour: Number.isFinite(hour) ? hour : 9,
         minute: Number.isFinite(minute) ? minute : 0,
     }
+}
+
+const normalizeDate = (value?: string | Date) => {
+    if (!value) return null
+    const parsed = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(parsed.getTime())) return null
+    return parsed
 }
 
 const toStartDate = (value?: string) => {
@@ -177,6 +192,51 @@ export const scheduleReminderNotifications = async (reminder: ReminderInput) => 
         console.warn('Failed to schedule local notifications', err)
         return false
     }
+}
+
+export const scheduleMaintenanceNotification = async(reminder: MaintenanceReminderInput) => {
+    if (!isNativePlatform()) return false
+    if (!reminder || reminder.id === undefined || reminder.id === null) return false
+
+    const dueDate = normalizeDate(reminder.dueDate)
+    if (!dueDate) return false
+
+    const hasPermission = await ensureLocalNotificationPermission()
+    if (!hasPermission) return false
+
+    await cancelReminderNotifications(reminder.id)
+
+    const { hour, minute } = parseTime(reminder.time || '09:00')
+    dueDate.setHours(hour, minute, 0, 0)
+    if (dueDate.getTime() <= Date.now()) {
+        // avoid scheduling in the past; push to next day so the user still sees it
+        dueDate.setDate(dueDate.getDate() + 1)
+    }
+
+    const notificationId = reminderBaseId(reminder.id) + 1
+    await LocalNotifications.schedule({
+        notifications: [
+            {
+                id: notificationId,
+                title: reminder.title
+                    ? `${reminder.title} due`
+                    : 'Maintenance due',
+                body: reminder.vehicleName
+                    ? `Scheduled for ${reminder.vehicleName}`
+                    : 'You have a maintenance schedule coming up.',
+                schedule: {
+                    at: dueDate,
+                    allowWhileIdle: true,
+                },
+                extra: {
+                    reminderId: reminder.id,
+                },
+                smallIcon: 'ic_stat_meclogger',
+                largeIcon: 'ic_meclogger_large',
+            },
+        ],
+    })
+    return true
 }
 
 export const triggerImmediateReminderNotification = async (

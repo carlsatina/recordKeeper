@@ -300,5 +300,18 @@ export default {
 .record-change.increase { color: #4ade80; }
 .record-change.decrease { color: #f87171; }
 .status-badge { padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.12); color: var(--text-secondary); }
-.add-record-btn { position: fixed; bottom: 20px; left: 16px; right: 16px; border: none; padding: 16px; font-size: 16px; font-weight: 700; }
+.add-record-btn { 
+    position: fixed; 
+    bottom: 20px; 
+    left: 16px; 
+    right: 16px; 
+    border: none; 
+    padding: 16px; 
+    font-size: 16px; 
+    font-weight: 700; 
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>

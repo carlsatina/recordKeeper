@@ -135,6 +135,18 @@
     >
         {{ hasActiveProfile ? 'Add reminder' : 'Create a profile first' }}
     </button>
+
+    <ConfirmDeleteModal
+        :show="showDeleteModal"
+        :loading="Boolean(deletingId)"
+        :title="`Delete ${pendingDeleteName || 'reminder'}?`"
+        message="This will remove the reminder and its schedule."
+        confirm-label="Delete"
+        cancel-label="Cancel"
+        @confirm="confirmDelete"
+        @cancel="closeDeleteModal"
+        @close="closeDeleteModal"
+    />
 </div>
 </template>
 
@@ -143,9 +155,13 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useMedicineReminders } from '@/composables/medicineReminders'
 import { cancelReminderNotifications, scheduleReminderNotifications } from '@/composables/localNotifications'
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue'
 
 export default {
     name: 'MedicineReminderView',
+    components: {
+        ConfirmDeleteModal
+    },
     setup() {
         const router = useRouter()
         const route = useRoute()
@@ -156,6 +172,9 @@ export default {
         const currentDate = ref(new Date())
         const showMonthPicker = ref(false)
         const deletingId = ref(null)
+        const showDeleteModal = ref(false)
+        const pendingDeleteId = ref(null)
+        const pendingDeleteName = ref('')
 
         const goBack = () => router.back()
         const addReminder = () => {
@@ -403,22 +422,36 @@ export default {
 
         const removeReminder = async(reminderId) => {
             if (!reminderId || deletingId.value === reminderId) return
-            if (!window.confirm('Delete this reminder?')) return
+            const target = reminders.value.find(r => r.id === reminderId)
+            pendingDeleteId.value = reminderId
+            pendingDeleteName.value = target?.medicineName || ''
+            showDeleteModal.value = true
+        }
+
+        const closeDeleteModal = () => {
+            showDeleteModal.value = false
+            pendingDeleteId.value = null
+            pendingDeleteName.value = ''
+        }
+
+        const confirmDelete = async() => {
+            if (!pendingDeleteId.value) return
             const token = localStorage.getItem('token')
             if (!token) {
                 alert('Please log in again.')
                 router.push('/login')
                 return
             }
-            deletingId.value = reminderId
+            deletingId.value = pendingDeleteId.value
             try {
-                await deleteReminder(token, reminderId)
-                await cancelReminderNotifications(reminderId)
+                await deleteReminder(token, pendingDeleteId.value)
+                await cancelReminderNotifications(pendingDeleteId.value)
                 await loadReminders()
             } catch (err) {
                 alert(err.message || 'Unable to delete reminder.')
             } finally {
                 deletingId.value = null
+                closeDeleteModal()
             }
         }
 
@@ -446,7 +479,11 @@ export default {
             goToProfileTab,
             formatFrequency,
             removeReminder,
-            deletingId
+            deletingId,
+            showDeleteModal,
+            pendingDeleteName,
+            confirmDelete,
+            closeDeleteModal
         }
     }
 }

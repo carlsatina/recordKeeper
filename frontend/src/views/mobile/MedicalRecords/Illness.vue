@@ -308,5 +308,18 @@ export default {
 .empty-icon { color: var(--text-muted); }
 .empty-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px 0; }
 .empty-text { font-size: 13px; color: var(--text-muted); margin: 0; }
-.add-record-btn { position: fixed; bottom: 20px; left: 16px; right: 16px; border: none; padding: 16px; font-size: 16px; font-weight: 700; }
+.add-record-btn { 
+    position: fixed; 
+    bottom: 20px; 
+    left: 16px; 
+    right: 16px; 
+    border: none; 
+    padding: 16px; 
+    font-size: 16px; 
+    font-weight: 700; 
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>

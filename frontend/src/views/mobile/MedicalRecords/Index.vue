@@ -85,7 +85,13 @@
             <!-- Today's Reminder Section -->
             <div class="section-header">
                 <h3 class="section-title">Today's Reminder</h3>
-                <a href="#" class="see-all-link" @click="router.push('/medical-records/medicine-reminders/history')">See all</a>
+                <a 
+                    href="#" 
+                    class="see-all-link" 
+                    @click.prevent="router.push('/medical-records/medicine-reminders/history')"
+                >
+                    See all
+                </a>
             </div>
             <div class="reminder-list glass-card">
                 <div v-if="!hasActiveProfile" class="reminder-empty">

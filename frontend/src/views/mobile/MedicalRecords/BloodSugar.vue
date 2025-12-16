@@ -302,5 +302,18 @@ export default {
 .status-badge.normal { background: rgba(34, 197, 94, 0.18); color: #4ade80; border-color: rgba(34,197,94,0.3); }
 .status-badge.elevated { background: rgba(251, 191, 36, 0.18); color: #fbbf24; border-color: rgba(251,191,36,0.35); }
 .status-badge.high { background: rgba(239, 68, 68, 0.18); color: #f87171; border-color: rgba(239,68,68,0.35); }
-.add-record-btn { position: fixed; bottom: 20px; left: 16px; right: 16px; border: none; padding: 16px; font-size: 16px; font-weight: 700; }
+.add-record-btn { 
+    position: fixed; 
+    bottom: 20px; 
+    left: 16px; 
+    right: 16px; 
+    border: none; 
+    padding: 16px; 
+    font-size: 16px; 
+    font-weight: 700; 
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>
